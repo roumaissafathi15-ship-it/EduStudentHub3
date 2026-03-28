@@ -65,17 +65,29 @@ input,textarea,select{
 <h2>👋 <span id="nameDisplay"></span></h2>
 
 <div class="bottom-nav">
-<button onclick="show('exSec')">📝 Exercices</button>
-<button onclick="show('taskSec')">✅ Tâches</button>
-<button onclick="show('statsSec')">📊 Stats</button>
+<button onclick="show('resumeSec')">📚</button>
+<button onclick="show('exSec')">📝</button>
+<button onclick="show('taskSec')">✅</button>
+<button onclick="show('statsSec')">📊</button>
 <button onclick="logout()">🚪</button>
 </div>
 
-<!-- EXERCICES -->
-<div id="exSec" class="section active">
-<h3>Exercices</h3>
+<!-- RESUMES -->
+<div id="resumeSec" class="section active">
+<h3>📚 Résumés</h3>
 
-<input id="searchEx" placeholder="🔍 rechercher" onkeyup="searchEx()">
+<input type="file" id="rFile">
+<input id="rTitle" placeholder="Titre">
+<button onclick="addResume()">Ajouter</button>
+
+<div id="rList"></div>
+</div>
+
+<!-- EXERCICES -->
+<div id="exSec" class="section">
+<h3>📝 Exercices</h3>
+
+<input id="searchEx" placeholder="🔍 rechercher" onkeyup="searchExFunc()">
 
 <select id="exType">
 <option value="txt">Texte</option>
@@ -96,7 +108,7 @@ input,textarea,select{
 
 <!-- TASK -->
 <div id="taskSec" class="section">
-<h3>Tâches</h3>
+<h3>✅ Tâches</h3>
 <input id="tText">
 <input id="tDate" type="date">
 <button onclick="addTask()">Ajouter</button>
@@ -105,13 +117,14 @@ input,textarea,select{
 
 <!-- STATS -->
 <div id="statsSec" class="section">
-<h3>Stats</h3>
+<h3>📊 Stats</h3>
 
 <p>Mes exercices: <span id="myExCount"></span></p>
 <p>Réalisés: <span id="myDone"></span></p>
 
-<p>Total ex: <span id="globalEx"></span></p>
+<p>Total exercices: <span id="globalEx"></span></p>
 <p>Total tâches: <span id="globalTasks"></span></p>
+<p>Total résumés: <span id="globalRes"></span></p>
 
 <div style="background:#ddd;border-radius:20px;width:80%;margin:auto;">
 <div id="bar" style="height:20px;background:#00ff99;width:0%;border-radius:20px;"></div>
@@ -126,7 +139,7 @@ input,textarea,select{
 
 // DATA
 let users = JSON.parse(localStorage.getItem("users")) || {};
-let shared = JSON.parse(localStorage.getItem("shared")) || {ex:[],tasks:[]};
+let shared = JSON.parse(localStorage.getItem("shared")) || {ex:[],tasks:[],resumes:[]};
 let currentUser=null;
 
 // LOGIN
@@ -152,7 +165,62 @@ document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
 document.getElementById(id).classList.add("active");
 }
 
-// ADD EX
+// ===== RESUMES =====
+function addResume(){
+let file = rFile.files[0];
+let title = rTitle.value;
+
+if(!file || !title) return alert("remplir");
+
+let reader = new FileReader();
+reader.onload = e=>{
+shared.resumes.push({
+title,
+data:e.target.result,
+type:file.type,
+user:currentUser
+});
+save();
+displayResumes();
+}
+reader.readAsDataURL(file);
+
+rTitle.value="";
+rFile.value="";
+}
+
+function displayResumes(){
+rList.innerHTML="";
+
+shared.resumes.forEach((r,i)=>{
+
+let preview="";
+
+if(r.type.startsWith("image")){
+preview += `<img src="${r.data}" width="100%">`;
+}
+else if(r.type==="application/pdf"){
+preview += `<iframe src="${r.data}" width="100%" height="200"></iframe>`;
+}
+
+preview += `<button onclick="openFile('resume',${i})">📂 Ouvrir</button>`;
+
+rList.innerHTML+=`
+<div class="card">
+<h4>${r.title} (${r.user})</h4>
+${preview}
+<button onclick="delResume(${i})">❌</button>
+</div>`;
+});
+}
+
+function delResume(i){
+shared.resumes.splice(i,1);
+save();
+displayResumes();
+}
+
+// ===== EXERCICES =====
 function addEx(){
 let type=exType.value;
 let title=eTitle.value;
@@ -187,7 +255,6 @@ save();
 displayStats();
 }
 
-// DISPLAY EX
 function displayEx(){
 eList.innerHTML="";
 shared.ex.forEach((ex,i)=>{
@@ -198,8 +265,12 @@ if(ex.type==="file"){
 if(ex.fileType.startsWith("image")){
 preview+=`<img src="${ex.data}" width="100%">`;
 }
-preview+=`<button onclick="openFile(${i})">📂 ouvrir</button>`;
-}else{
+else if(ex.fileType==="application/pdf"){
+preview+=`<iframe src="${ex.data}" width="100%" height="200"></iframe>`;
+}
+preview+=`<button onclick="openFile('ex',${i})">📂 ouvrir</button>`;
+}
+else{
 preview+=`<p>${ex.data}</p>`;
 }
 
@@ -216,20 +287,44 @@ ${doneBtn}
 });
 }
 
-// OPEN FILE
-function openFile(i){
-let f=shared.ex[i];
+function delEx(i){
+shared.ex.splice(i,1);
+save();
+displayEx();
+}
+
+// ===== OUVERTURE AVEC CACHE =====
+function openFile(type,i){
+let f;
+
+if(type==="resume") f=shared.resumes[i];
+else f=shared.ex[i];
+
+// 🔥 déjà ouvert → pas de re-download
+if(f.url){
+window.open(f.url);
+return;
+}
+
+// 🔄 créer une seule fois
 let b=atob(f.data.split(',')[1]);
 let arr=new Uint8Array(b.length);
 
-for(let i2=0;i2<b.length;i2++) arr[i2]=b.charCodeAt(i2);
+for(let j=0;j<b.length;j++){
+arr[j]=b.charCodeAt(j);
+}
 
-let blob=new Blob([arr],{type:f.fileType});
+let blob=new Blob([arr],{type:f.type || f.fileType});
 let url=URL.createObjectURL(blob);
+
+// stocker
+f.url = url;
+save();
+
 window.open(url);
 }
 
-// DONE
+// ===== DONE =====
 function markDone(i){
 users[currentUser].done.push(i);
 save();
@@ -237,19 +332,14 @@ displayEx();
 displayStats();
 }
 
-// DELETE
-function delEx(i){
-shared.ex.splice(i,1);
-save();
-displayEx();
-}
-
-// TASKS
+// ===== TASK =====
 function addTask(){
 let t=tText.value;
 let d=tDate.value;
+
 shared.tasks.push({t,d,user:currentUser});
 users[currentUser].tasks.push(t);
+
 save();
 displayTasks();
 displayStats();
@@ -258,7 +348,7 @@ displayStats();
 function displayTasks(){
 tList.innerHTML="";
 shared.tasks.forEach((t,i)=>{
-tList.innerHTML+=`<li>${t.d} ${t.t} <button onclick="delTask(${i})">❌</button></li>`;
+tList.innerHTML+=`<li>${t.d} ${t.t} (${t.user}) <button onclick="delTask(${i})">❌</button></li>`;
 });
 }
 
@@ -268,15 +358,15 @@ save();
 displayTasks();
 }
 
-// SEARCH
-function searchEx(){
-let val=searchEx.value.toLowerCase();
-document.querySelectorAll(".card").forEach(c=>{
+// ===== SEARCH =====
+function searchExFunc(){
+let val=document.getElementById("searchEx").value.toLowerCase();
+document.querySelectorAll("#eList .card").forEach(c=>{
 c.style.display=c.innerText.toLowerCase().includes(val)?"block":"none";
 });
 }
 
-// FILTER
+// ===== FILTER =====
 function filterMine(){
 eList.innerHTML="";
 shared.ex.forEach((ex,i)=>{
@@ -286,16 +376,17 @@ eList.innerHTML+=`<div class="card"><h4>${ex.title}</h4></div>`;
 });
 }
 
-// STATS
+// ===== STATS =====
 function displayStats(){
 myExCount.innerText=users[currentUser].myEx.length;
 myDone.innerText=users[currentUser].done.length;
 globalEx.innerText=shared.ex.length;
 globalTasks.innerText=shared.tasks.length;
+globalRes.innerText=shared.resumes.length;
 
 let p=Math.round((users[currentUser].done.length/(shared.ex.length||1))*100);
 bar.style.width=p+"%";
-progressText.innerText=p+"%";
+progressText.innerText=p+"% terminé";
 }
 
 // SAVE
@@ -311,6 +402,7 @@ document.querySelector('h2').style.display='none';
 studentName.style.display='none';
 studentPass.style.display='none';
 
+displayResumes();
 displayEx();
 displayTasks();
 displayStats();

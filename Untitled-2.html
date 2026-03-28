@@ -3,292 +3,325 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EduStudentHub - Multi-utilisateur partagé</title>
+<title>EduStudentHub</title>
+
 <style>
-body{font-family:Arial;margin:0;background:#667eea;color:white;text-align:center;}
+body{
+  font-family: 'Segoe UI', sans-serif;
+  margin:0;
+  background: linear-gradient(135deg,#667eea,#764ba2);
+  color:white;
+  text-align:center;
+}
 .section{display:none;padding:20px;}
 .active{display:block;}
-button{padding:8px 15px;border-radius:15px;border:none;margin:5px;cursor:pointer;}
-.card{background:white;color:black;margin:10px;padding:10px;border-radius:10px;text-align:left;}
-.bottom-nav{position:fixed;bottom:0;width:100%;background:white;display:flex;justify-content:space-around;}
-.bottom-nav button{background:none;}
-input, select, textarea{padding:5px;border-radius:5px;border:none;margin:5px;}
-textarea{width:90%;padding:5px;margin:5px;border-radius:5px;}
+
+.card{
+  background:white;
+  color:black;
+  margin:10px;
+  padding:15px;
+  border-radius:15px;
+  box-shadow:0 5px 15px rgba(0,0,0,0.2);
+}
+
+button{
+  padding:8px 15px;
+  border:none;
+  border-radius:10px;
+  margin:5px;
+  cursor:pointer;
+  background:#667eea;
+  color:white;
+}
+
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  width:100%;
+  background:white;
+  display:flex;
+  justify-content:space-around;
+}
+
+input,textarea,select{
+  padding:5px;
+  margin:5px;
+  border-radius:5px;
+  border:none;
+}
 </style>
 </head>
+
 <body>
 
-<h2>🔐 Connexion / Inscription</h2>
-<input id="studentName" placeholder="Nom étudiant">
+<h2>🔐 Connexion</h2>
+<input id="studentName" placeholder="Nom">
 <input id="studentPass" type="password" placeholder="Mot de passe">
-<button id="loginBtn" onclick="login()">Se connecter / S'inscrire</button>
+<button onclick="login()">Entrer</button>
 
 <div id="dashboard">
-<h2>👋 Bienvenue, <span id="nameDisplay"></span> !</h2>
+
+<h2>👋 <span id="nameDisplay"></span></h2>
 
 <div class="bottom-nav">
-<button onclick="show('resumeSec')">📚 Résumés</button>
 <button onclick="show('exSec')">📝 Exercices</button>
 <button onclick="show('taskSec')">✅ Tâches</button>
 <button onclick="show('statsSec')">📊 Stats</button>
-<button onclick="logout()">🚪 Déconnexion</button>
+<button onclick="logout()">🚪</button>
 </div>
 
-<!-- RESUMES PDF PARTAGE -->
-<div id="resumeSec" class="section active">
-<h3>📚 Résumés Partagés</h3>
-<input type="file" id="pdfUpload" accept="application/pdf">
-<input id="pdfTitle" placeholder="Titre du résumé">
-<button onclick="addResumePDF()">Partager PDF</button>
-<div id="rList"></div>
-</div>
+<!-- EXERCICES -->
+<div id="exSec" class="section active">
+<h3>Exercices</h3>
 
-<!-- EXERCICES PARTAGE -->
-<div id="exSec" class="section">
-<h3>📝 Exercices Partagés</h3>
+<input id="searchEx" placeholder="🔍 rechercher" onkeyup="searchEx()">
+
 <select id="exType">
-  <option value="txt">Texte</option>
-  <option value="pdf">PDF</option>
+<option value="txt">Texte</option>
+<option value="file">Fichier</option>
 </select>
-<input id="eTitle" placeholder="Titre de l'exercice">
-<textarea id="eText" placeholder="Texte ou description"></textarea>
-<input type="file" id="ePdf" accept="application/pdf">
-<button onclick="addEx()">Partager</button>
+
+<input id="eTitle" placeholder="Titre">
+<textarea id="eText"></textarea>
+<input type="file" id="eFile">
+
+<button onclick="addEx()">Ajouter</button>
+
+<button onclick="filterMine()">📁 Mes fichiers</button>
+<button onclick="displayEx()">🌍 Tous</button>
+
 <div id="eList"></div>
 </div>
 
-<!-- TASKS -->
+<!-- TASK -->
 <div id="taskSec" class="section">
-<h3>✅ Tâches / Planning Partagés</h3>
-<input id="tText" placeholder="Tâche">
+<h3>Tâches</h3>
+<input id="tText">
 <input id="tDate" type="date">
-<button onclick="addTask()">Partager</button>
+<button onclick="addTask()">Ajouter</button>
 <ul id="tList"></ul>
 </div>
 
 <!-- STATS -->
 <div id="statsSec" class="section">
-<h3>📊 Statistiques Personnelles</h3>
-<p>Exercices ajoutés : <span id="myExCount">0</span></p>
-<p>Tâches ajoutées : <span id="myTaskCount">0</span></p>
-<p>Exercices réalisés : <span id="myExDone">0</span></p>
+<h3>Stats</h3>
+
+<p>Mes exercices: <span id="myExCount"></span></p>
+<p>Réalisés: <span id="myDone"></span></p>
+
+<p>Total ex: <span id="globalEx"></span></p>
+<p>Total tâches: <span id="globalTasks"></span></p>
+
+<div style="background:#ddd;border-radius:20px;width:80%;margin:auto;">
+<div id="bar" style="height:20px;background:#00ff99;width:0%;border-radius:20px;"></div>
+</div>
+<p id="progressText"></p>
+
+</div>
+
 </div>
 
 <script>
-// ===== MULTI-UTILISATEUR =====
-const loginBtn = document.getElementById("loginBtn");
-let currentUser = null;
 
+// DATA
 let users = JSON.parse(localStorage.getItem("users")) || {};
-let shared = JSON.parse(localStorage.getItem("shared")) || {pdfs:[], ex:[], tasks:[]};
+let shared = JSON.parse(localStorage.getItem("shared")) || {ex:[],tasks:[]};
+let currentUser=null;
 
-function login() {
-  const name = studentName.value.trim();
-  const pass = studentPass.value;
-  if(!name || !pass){ alert("Nom et mot de passe requis"); return; }
+// LOGIN
+function login(){
+let n=studentName.value.trim();
+let p=studentPass.value;
 
-  if(users[name]){
-    if(users[name].pass !== pass){ alert("Mot de passe incorrect !"); return; }
-  } else {
-    users[name] = {pass: pass, myTasks:[], myEx:[], exDone:[]};
-    localStorage.setItem("users", JSON.stringify(users));
-    alert("Utilisateur créé !");
-  }
-  currentUser = name;
-  localStorage.setItem("currentUser", currentUser);
-  displayAll();
+if(!n||!p) return alert("remplir");
+
+if(!users[n]) users[n]={pass:p,myEx:[],done:[],tasks:[]};
+
+if(users[n].pass!==p) return alert("wrong");
+
+currentUser=n;
+localStorage.setItem("currentUser",n);
+displayAll();
 }
 
-function logout() {
-  localStorage.removeItem("currentUser");
-  location.reload();
-}
+function logout(){localStorage.clear();location.reload();}
 
 function show(id){
-  document.querySelectorAll("#dashboard .section").forEach(s=>s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
+document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+document.getElementById(id).classList.add("active");
 }
 
-// ===== RESUMES PDF =====
-function addResumePDF(){
-  let file = document.getElementById("pdfUpload").files[0];
-  let title = document.getElementById("pdfTitle").value.trim();
-  if(!file || !title){ alert("Titre et fichier requis"); return; }
+// ADD EX
+function addEx(){
+let type=exType.value;
+let title=eTitle.value;
+let text=eText.value;
+let file=eFile.files[0];
 
-  let reader = new FileReader();
-  reader.onload = function(e){
-    shared.pdfs.push({title, data:e.target.result, name:file.name, user:currentUser});
-    users[currentUser].myEx.push({type:"pdf", title});
-    saveAll();
-    displayResumes();
-    displayStats();
-  }
-  reader.readAsDataURL(file);
+if(!title) return alert("titre");
+
+if(type==="file"){
+let reader=new FileReader();
+reader.onload=e=>{
+shared.ex.push({
+title,
+type:"file",
+data:e.target.result,
+fileType:file.type,
+user:currentUser
+});
+save();
+displayEx();
+};
+reader.readAsDataURL(file);
+}
+else{
+shared.ex.push({title,type:"txt",data:text,user:currentUser});
+save();
+displayEx();
 }
 
-function displayResumes(){
-  rList.innerHTML = "";
-  shared.pdfs.forEach((r,i)=>{
-    rList.innerHTML += `<div class="card">
-      <h4>${r.title} (partagé par ${r.user})</h4>
-      <button onclick="openPDF(${i},'pdf')">📖 Ouvrir PDF</button>
-      <button onclick="delResume(${i})">❌ Supprimer</button>
-    </div>`;
-  });
+users[currentUser].myEx.push(title);
+save();
+displayStats();
 }
 
-function delResume(i){
-  shared.pdfs.splice(i,1);
-  saveAll();
-  displayResumes();
-}
-
-// ===== EXERCICES =====
-function addEx() {
-  let type = exType.value;
-  let title = eTitle.value.trim();
-  let text = eText.value.trim();
-  let file = document.getElementById("ePdf").files[0];
-
-  if(!title){ alert("Titre requis"); return; }
-  if(type=="txt" && !text){ alert("Texte requis"); return; }
-  if(type=="pdf" && !file){ alert("Fichier PDF requis"); return; }
-
-  if(type=="pdf"){
-    let reader = new FileReader();
-    reader.onload = function(e){
-      shared.ex.push({title, type:"pdf", data:e.target.result, name:file.name, user:currentUser});
-      users[currentUser].myEx.push({type:"pdf", title});
-      saveAll();
-      displayEx();
-      displayStats();
-    }
-    reader.readAsDataURL(file);
-  } else {
-    shared.ex.push({title, type:"txt", data:text, user:currentUser});
-    users[currentUser].myEx.push({type:"txt", title});
-    saveAll();
-    displayEx();
-    displayStats();
-  }
-  eTitle.value = "";
-  eText.value = "";
-  document.getElementById("ePdf").value = "";
-}
-
+// DISPLAY EX
 function displayEx(){
-  eList.innerHTML = "";
-  const dataUser = users[currentUser];
-  shared.ex.forEach((ex,i)=>{
-    let content = ex.type=="pdf" ? `<button onclick="openPDF(${i},'ex')">📖 Ouvrir PDF</button>` : `<p>${ex.data}</p>`;
-    let doneChecked = dataUser.exDone.includes(i) ? "disabled" : "";
-    eList.innerHTML += `<div class="card">
-      <h4>${ex.title} (partagé par ${ex.user})</h4>
-      ${content}
-      <button onclick="markDone(${i})" ${doneChecked}>✅ Réalisé</button>
-      <button onclick="delEx(${i})">❌ Supprimer</button>
-    </div>`;
-  });
+eList.innerHTML="";
+shared.ex.forEach((ex,i)=>{
+
+let preview="";
+
+if(ex.type==="file"){
+if(ex.fileType.startsWith("image")){
+preview+=`<img src="${ex.data}" width="100%">`;
+}
+preview+=`<button onclick="openFile(${i})">📂 ouvrir</button>`;
+}else{
+preview+=`<p>${ex.data}</p>`;
 }
 
+let doneBtn = users[currentUser].done.includes(i) ? "✔" :
+`<button onclick="markDone(${i})">✅</button>`;
+
+eList.innerHTML+=`
+<div class="card">
+<h4>${ex.title} (${ex.user})</h4>
+${preview}
+${doneBtn}
+<button onclick="delEx(${i})">❌</button>
+</div>`;
+});
+}
+
+// OPEN FILE
+function openFile(i){
+let f=shared.ex[i];
+let b=atob(f.data.split(',')[1]);
+let arr=new Uint8Array(b.length);
+
+for(let i2=0;i2<b.length;i2++) arr[i2]=b.charCodeAt(i2);
+
+let blob=new Blob([arr],{type:f.fileType});
+let url=URL.createObjectURL(blob);
+window.open(url);
+}
+
+// DONE
 function markDone(i){
-  if(!users[currentUser].exDone.includes(i)){
-    users[currentUser].exDone.push(i);
-    saveAll();
-    displayEx();
-    displayStats();
-  }
+users[currentUser].done.push(i);
+save();
+displayEx();
+displayStats();
 }
 
+// DELETE
 function delEx(i){
-  shared.ex.splice(i,1);
-  users[currentUser].myEx = users[currentUser].myEx.filter((_,idx)=>idx!==i);
-  users[currentUser].exDone = users[currentUser].exDone.filter(idx=>idx!==i);
-  saveAll();
-  displayEx();
-  displayStats();
+shared.ex.splice(i,1);
+save();
+displayEx();
 }
 
-// ===== TASKS =====
-function addTask() {
-  let text = tText.value.trim();
-  let date = tDate.value;
-  if(!text || !date){ alert("Tâche et date requises"); return; }
-
-  shared.tasks.push({text, date, user:currentUser});
-  users[currentUser].myTasks.push({text, date});
-  saveAll();
-  displayTasks();
-  displayStats();
-  tText.value = "";
-  tDate.value = "";
+// TASKS
+function addTask(){
+let t=tText.value;
+let d=tDate.value;
+shared.tasks.push({t,d,user:currentUser});
+users[currentUser].tasks.push(t);
+save();
+displayTasks();
+displayStats();
 }
 
 function displayTasks(){
-  tList.innerHTML = "";
-  shared.tasks.forEach((t,i)=>{
-    tList.innerHTML += `<li>${t.date} - ${t.text} (partagé par ${t.user}) <button onclick="delTask(${i})">❌ Supprimer</button></li>`;
-  });
+tList.innerHTML="";
+shared.tasks.forEach((t,i)=>{
+tList.innerHTML+=`<li>${t.d} ${t.t} <button onclick="delTask(${i})">❌</button></li>`;
+});
 }
 
 function delTask(i){
-  shared.tasks.splice(i,1);
-  saveAll();
-  displayTasks();
-  displayStats();
+shared.tasks.splice(i,1);
+save();
+displayTasks();
 }
 
-// ===== OUVRIR PDF BLOBS =====
-function openPDF(index,type){
-  let file;
-  if(type==='pdf'){ 
-    file = shared.pdfs[index].data;
-  } else {
-    file = shared.ex[index].data;
-  }
-  const byteString = atob(file.split(',')[1]);
-  const ab = new ArrayBuffer(byteString.length);
-  const ia = new Uint8Array(ab);
-  for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-  const blob = new Blob([ab], {type: 'application/pdf'});
-  const url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
+// SEARCH
+function searchEx(){
+let val=searchEx.value.toLowerCase();
+document.querySelectorAll(".card").forEach(c=>{
+c.style.display=c.innerText.toLowerCase().includes(val)?"block":"none";
+});
 }
 
-// ===== STATS =====
+// FILTER
+function filterMine(){
+eList.innerHTML="";
+shared.ex.forEach((ex,i)=>{
+if(ex.user===currentUser){
+eList.innerHTML+=`<div class="card"><h4>${ex.title}</h4></div>`;
+}
+});
+}
+
+// STATS
 function displayStats(){
-  myExCount.innerText = users[currentUser].myEx.length;
-  myTaskCount.innerText = users[currentUser].myTasks.length;
-  myExDone.innerText = users[currentUser].exDone.length;
+myExCount.innerText=users[currentUser].myEx.length;
+myDone.innerText=users[currentUser].done.length;
+globalEx.innerText=shared.ex.length;
+globalTasks.innerText=shared.tasks.length;
+
+let p=Math.round((users[currentUser].done.length/(shared.ex.length||1))*100);
+bar.style.width=p+"%";
+progressText.innerText=p+"%";
 }
 
-// ===== UTIL =====
-function saveAll(){
-  localStorage.setItem("users", JSON.stringify(users));
-  localStorage.setItem("shared", JSON.stringify(shared));
+// SAVE
+function save(){
+localStorage.setItem("users",JSON.stringify(users));
+localStorage.setItem("shared",JSON.stringify(shared));
 }
 
-// ===== DISPLAY ALL =====
+// INIT
 function displayAll(){
-  currentUser = localStorage.getItem("currentUser");
-  if(!currentUser) return;
+nameDisplay.innerText=currentUser;
+document.querySelector('h2').style.display='none';
+studentName.style.display='none';
+studentPass.style.display='none';
 
-  nameDisplay.innerText = currentUser;
-  document.querySelector('h2').style.display='none';
-  studentName.style.display='none';
-  studentPass.style.display='none';
-  loginBtn.style.display='none';
-
-  displayResumes();
-  displayEx();
-  displayTasks();
-  displayStats();
+displayEx();
+displayTasks();
+displayStats();
 }
 
-// Si déjà connecté
 if(localStorage.getItem("currentUser")){
-  displayAll();
+currentUser=localStorage.getItem("currentUser");
+displayAll();
 }
+
 </script>
+
 </body>
 </html>

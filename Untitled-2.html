@@ -1,419 +1,241 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EduStudentHub</title>
-
-<style>
-body{
-  font-family: 'Segoe UI', sans-serif;
-  margin:0;
-  background: linear-gradient(135deg,#667eea,#764ba2);
-  color:white;
-  text-align:center;
-}
-.section{display:none;padding:20px;}
-.active{display:block;}
-
-.card{
-  background:white;
-  color:black;
-  margin:10px;
-  padding:15px;
-  border-radius:15px;
-  box-shadow:0 5px 15px rgba(0,0,0,0.2);
-}
-
-button{
-  padding:8px 15px;
-  border:none;
-  border-radius:10px;
-  margin:5px;
-  cursor:pointer;
-  background:#667eea;
-  color:white;
-}
-
-.bottom-nav{
-  position:fixed;
-  bottom:0;
-  width:100%;
-  background:white;
-  display:flex;
-  justify-content:space-around;
-}
-
-input,textarea,select{
-  padding:5px;
-  margin:5px;
-  border-radius:5px;
-  border:none;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduStudentHub - Collaboratif</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #667eea; color: white; text-align: center; padding-bottom: 70px; }
+        .section { display: none; padding: 20px; max-width: 800px; margin: auto; }
+        .active { display: block; }
+        
+        /* Auth Styles */
+        #auth-container { background: white; color: #333; padding: 30px; border-radius: 15px; margin: 50px auto; width: 80%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        
+        /* Cards & UI */
+        button { padding: 10px 20px; border-radius: 20px; border: none; margin: 5px; cursor: pointer; transition: 0.3s; font-weight: bold; }
+        .btn-delete { background: #ff4d4d; color: white; font-size: 0.8em; }
+        .card { background: white; color: black; margin: 15px 0; padding: 15px; border-radius: 12px; text-align: left; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; }
+        
+        /* Nav */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+        .bottom-nav button { background: none; color: #667eea; }
+        
+        input, select, textarea { padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin: 5px; width: 80%; }
+        iframe { border-radius: 8px; margin-top: 10px; border: 1px solid #eee; }
+        
+        #dashboard { display: none; }
+        .logged-in #dashboard { display: block; }
+        .logged-in #auth-container { display: none; }
+    </style>
 </head>
-
 <body>
 
-<h2>🔐 Connexion</h2>
-<input id="studentName" placeholder="Nom">
-<input id="studentPass" type="password" placeholder="Mot de passe">
-<button onclick="login()">Entrer</button>
+<div id="auth-container">
+    <h2>🔐 Connexion / Inscription</h2>
+    <input id="studentName" placeholder="Nom d'utilisateur">
+    <input id="studentPass" type="password" placeholder="Mot de passe">
+    <br>
+    <button style="background: #667eea; color: white;" onclick="login()">Se connecter</button>
+</div>
 
 <div id="dashboard">
+    <h2>👋 Bienvenue, <span id="nameDisplay"></span> !</h2>
 
-<h2>👋 <span id="nameDisplay"></span></h2>
+    <div class="bottom-nav">
+        <button onclick="show('resumeSec')">📚 Résumés</button>
+        <button onclick="show('exSec')">📝 Exercices</button>
+        <button onclick="show('taskSec')">✅ Tâches</button>
+        <button onclick="show('statsSec')">📊 Stats</button>
+        <button onclick="logout()" style="color: red;">🚪</button>
+    </div>
 
-<div class="bottom-nav">
-<button onclick="show('resumeSec')">📚</button>
-<button onclick="show('exSec')">📝</button>
-<button onclick="show('taskSec')">✅</button>
-<button onclick="show('statsSec')">📊</button>
-<button onclick="logout()">🚪</button>
-</div>
+    <div id="resumeSec" class="section active">
+        <h3>📚 Partager un Résumé (PDF)</h3>
+        <input id="pdfTitle" placeholder="Titre du cours">
+        <input type="file" id="pdfUpload" accept="application/pdf">
+        <button style="background: #4caf50; color: white;" onclick="addResumePDF()">Publier le PDF</button>
+        <div id="rList"></div>
+    </div>
 
-<!-- RESUMES -->
-<div id="resumeSec" class="section active">
-<h3>📚 Résumés</h3>
+    <div id="exSec" class="section">
+        <h3>📝 Partager un Exercice</h3>
+        <select id="exType" onchange="toggleExInput()">
+            <option value="txt">Texte / Enoncé</option>
+            <option value="pdf">Fichier PDF</option>
+        </select>
+        <input id="eTitle" placeholder="Titre de l'exercice">
+        <textarea id="eText" placeholder="Écrivez l'énoncé ici..."></textarea>
+        <input type="file" id="ePdf" accept="application/pdf" style="display:none;">
+        <button style="background: #4caf50; color: white;" onclick="addEx()">Partager</button>
+        <div id="eList"></div>
+    </div>
 
-<input type="file" id="rFile">
-<input id="rTitle" placeholder="Titre">
-<button onclick="addResume()">Ajouter</button>
+    <div id="taskSec" class="section">
+        <h3>✅ Planning Collectif</h3>
+        <input id="tText" placeholder="Ex: Examen de Maths">
+        <input id="tDate" type="date">
+        <button style="background: #4caf50; color: white;" onclick="addTask()">Ajouter au planning</button>
+        <div id="tList"></div>
+    </div>
 
-<div id="rList"></div>
-</div>
-
-<!-- EXERCICES -->
-<div id="exSec" class="section">
-<h3>📝 Exercices</h3>
-
-<input id="searchEx" placeholder="🔍 rechercher" onkeyup="searchExFunc()">
-
-<select id="exType">
-<option value="txt">Texte</option>
-<option value="file">Fichier</option>
-</select>
-
-<input id="eTitle" placeholder="Titre">
-<textarea id="eText"></textarea>
-<input type="file" id="eFile">
-
-<button onclick="addEx()">Ajouter</button>
-
-<button onclick="filterMine()">📁 Mes fichiers</button>
-<button onclick="displayEx()">🌍 Tous</button>
-
-<div id="eList"></div>
-</div>
-
-<!-- TASK -->
-<div id="taskSec" class="section">
-<h3>✅ Tâches</h3>
-<input id="tText">
-<input id="tDate" type="date">
-<button onclick="addTask()">Ajouter</button>
-<ul id="tList"></ul>
-</div>
-
-<!-- STATS -->
-<div id="statsSec" class="section">
-<h3>📊 Stats</h3>
-
-<p>Mes exercices: <span id="myExCount"></span></p>
-<p>Réalisés: <span id="myDone"></span></p>
-
-<p>Total exercices: <span id="globalEx"></span></p>
-<p>Total tâches: <span id="globalTasks"></span></p>
-<p>Total résumés: <span id="globalRes"></span></p>
-
-<div style="background:#ddd;border-radius:20px;width:80%;margin:auto;">
-<div id="bar" style="height:20px;background:#00ff99;width:0%;border-radius:20px;"></div>
-</div>
-<p id="progressText"></p>
-
-</div>
-
+    <div id="statsSec" class="section">
+        <h3>📊 Tes Contributions</h3>
+        <div class="card">
+            <p>Documents partagés : <strong id="myExCount">0</strong></p>
+            <p>Tâches créées : <strong id="myTaskCount">0</strong></p>
+        </div>
+    </div>
 </div>
 
 <script>
-
-// DATA
+// --- INITIALISATION ---
+let currentUser = localStorage.getItem("currentUser");
 let users = JSON.parse(localStorage.getItem("users")) || {};
-let shared = JSON.parse(localStorage.getItem("shared")) || {ex:[],tasks:[],resumes:[]};
-let currentUser=null;
+let shared = JSON.parse(localStorage.getItem("shared")) || { pdfs: [], ex: [], tasks: [] };
 
-// LOGIN
-function login(){
-let n=studentName.value.trim();
-let p=studentPass.value;
+if (currentUser) { displayAll(); }
 
-if(!n||!p) return alert("remplir");
+// --- AUTHENTIFICATION ---
+function login() {
+    const name = document.getElementById("studentName").value.trim();
+    const pass = document.getElementById("studentPass").value;
+    if (!name || !pass) return alert("Remplissez tous les champs");
 
-if(!users[n]) users[n]={pass:p,myEx:[],done:[],tasks:[]};
+    if (users[name]) {
+        if (users[name].pass !== pass) return alert("Mot de passe incorrect");
+    } else {
+        users[name] = { pass: pass, myTasks: 0, myEx: 0 };
+        saveAll();
+        alert("Compte créé avec succès !");
+    }
 
-if(users[n].pass!==p) return alert("wrong");
-
-currentUser=n;
-localStorage.setItem("currentUser",n);
-displayAll();
+    currentUser = name;
+    localStorage.setItem("currentUser", currentUser);
+    displayAll();
 }
 
-function logout(){localStorage.clear();location.reload();}
-
-function show(id){
-document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-document.getElementById(id).classList.add("active");
+function logout() {
+    localStorage.removeItem("currentUser");
+    location.reload();
 }
 
-// ===== RESUMES =====
-function addResume(){
-let file = rFile.files[0];
-let title = rTitle.value;
-
-if(!file || !title) return alert("remplir");
-
-let reader = new FileReader();
-reader.onload = e=>{
-shared.resumes.push({
-title,
-data:e.target.result,
-type:file.type,
-user:currentUser
-});
-save();
-displayResumes();
-}
-reader.readAsDataURL(file);
-
-rTitle.value="";
-rFile.value="";
+// --- LOGIQUE CORE ---
+function show(id) {
+    document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
 }
 
-function displayResumes(){
-rList.innerHTML="";
-
-shared.resumes.forEach((r,i)=>{
-
-let preview="";
-
-if(r.type.startsWith("image")){
-preview += `<img src="${r.data}" width="100%">`;
-}
-else if(r.type==="application/pdf"){
-preview += `<iframe src="${r.data}" width="100%" height="200"></iframe>`;
+function saveAll() {
+    localStorage.setItem("users", JSON.stringify(users));
+    localStorage.setItem("shared", JSON.stringify(shared));
 }
 
-preview += `<button onclick="openFile('resume',${i})">📂 Ouvrir</button>`;
+// --- AJOUT DE CONTENU ---
+function addResumePDF() {
+    const file = document.getElementById("pdfUpload").files[0];
+    const title = document.getElementById("pdfTitle").value.trim();
+    if (!file || !title) return alert("Titre et fichier requis");
+    if (file.size > 1500000) return alert("Fichier trop lourd (max 1.5Mo)");
 
-rList.innerHTML+=`
-<div class="card">
-<h4>${r.title} (${r.user})</h4>
-${preview}
-<button onclick="delResume(${i})">❌</button>
-</div>`;
-});
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        shared.pdfs.push({ title, data: e.target.result, name: file.name, user: currentUser });
+        users[currentUser].myEx++;
+        saveAndRefresh();
+    };
+    reader.readAsDataURL(file);
 }
 
-function delResume(i){
-shared.resumes.splice(i,1);
-save();
-displayResumes();
+function addEx() {
+    const type = document.getElementById("exType").value;
+    const title = document.getElementById("eTitle").value.trim();
+    if (!title) return alert("Titre requis");
+
+    if (type === "txt") {
+        const text = document.getElementById("eText").value.trim();
+        shared.ex.push({ title, type: "txt", data: text, user: currentUser });
+        users[currentUser].myEx++;
+        saveAndRefresh();
+    } else {
+        const file = document.getElementById("ePdf").files[0];
+        if (!file) return alert("Fichier requis");
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            shared.ex.push({ title, type: "pdf", data: e.target.result, name: file.name, user: currentUser });
+            users[currentUser].myEx++;
+            saveAndRefresh();
+        };
+        reader.readAsDataURL(file);
+    }
 }
 
-// ===== EXERCICES =====
-function addEx(){
-let type=exType.value;
-let title=eTitle.value;
-let text=eText.value;
-let file=eFile.files[0];
+function addTask() {
+    const text = document.getElementById("tText").value.trim();
+    const date = document.getElementById("tDate").value;
+    if (!text || !date) return alert("Infos manquantes");
 
-if(!title) return alert("titre");
-
-if(type==="file"){
-let reader=new FileReader();
-reader.onload=e=>{
-shared.ex.push({
-title,
-type:"file",
-data:e.target.result,
-fileType:file.type,
-user:currentUser
-});
-save();
-displayEx();
-};
-reader.readAsDataURL(file);
-}
-else{
-shared.ex.push({title,type:"txt",data:text,user:currentUser});
-save();
-displayEx();
+    shared.tasks.push({ text, date, user: currentUser });
+    users[currentUser].myTasks++;
+    saveAndRefresh();
 }
 
-users[currentUser].myEx.push(title);
-save();
-displayStats();
+// --- SUPPRESSION ---
+function deleteItem(category, index) {
+    if (confirm("Supprimer cet élément ?")) {
+        const item = shared[category][index];
+        if (item.user !== currentUser) return alert("Vous n'êtes pas l'auteur !");
+        
+        shared[category].splice(index, 1);
+        saveAndRefresh();
+    }
 }
 
-function displayEx(){
-eList.innerHTML="";
-shared.ex.forEach((ex,i)=>{
+// --- AFFICHAGE ---
+function displayAll() {
+    document.body.classList.add("logged-in");
+    document.getElementById("nameDisplay").innerText = currentUser;
+    
+    // Résumés
+    const rList = document.getElementById("rList");
+    rList.innerHTML = "";
+    shared.pdfs.forEach((r, i) => {
+        const delBtn = r.user === currentUser ? `<button class="btn-delete" onclick="deleteItem('pdfs', ${i})">Supprimer</button>` : "";
+        rList.innerHTML += `<div class="card"><h4>${r.title}</h4><small>Par ${r.user}</small><br>${delBtn}<br><iframe src="${r.data}" width="100%" height="200"></iframe></div>`;
+    });
 
-let preview="";
+    // Exercices
+    const eList = document.getElementById("eList");
+    eList.innerHTML = "";
+    shared.ex.forEach((ex, i) => {
+        const delBtn = ex.user === currentUser ? `<button class="btn-delete" onclick="deleteItem('ex', ${i})">Supprimer</button>` : "";
+        const content = ex.type === "pdf" ? `<iframe src="${ex.data}" width="100%" height="200"></iframe>` : `<p>${ex.data}</p>`;
+        eList.innerHTML += `<div class="card"><h4>${ex.title}</h4><small>Par ${ex.user}</small><br>${delBtn}${content}</div>`;
+    });
 
-if(ex.type==="file"){
-if(ex.fileType.startsWith("image")){
-preview+=`<img src="${ex.data}" width="100%">`;
-}
-else if(ex.fileType==="application/pdf"){
-preview+=`<iframe src="${ex.data}" width="100%" height="200"></iframe>`;
-}
-preview+=`<button onclick="openFile('ex',${i})">📂 ouvrir</button>`;
-}
-else{
-preview+=`<p>${ex.data}</p>`;
-}
+    // Tâches
+    const tList = document.getElementById("tList");
+    tList.innerHTML = "";
+    shared.tasks.forEach((t, i) => {
+        const delBtn = t.user === currentUser ? `<button class="btn-delete" onclick="deleteItem('tasks', ${i})">X</button>` : "";
+        tList.innerHTML += `<div class="card"><strong>${t.date}</strong> : ${t.text} (par ${t.user}) ${delBtn}</div>`;
+    });
 
-let doneBtn = users[currentUser].done.includes(i) ? "✔" :
-`<button onclick="markDone(${i})">✅</button>`;
-
-eList.innerHTML+=`
-<div class="card">
-<h4>${ex.title} (${ex.user})</h4>
-${preview}
-${doneBtn}
-<button onclick="delEx(${i})">❌</button>
-</div>`;
-});
-}
-
-function delEx(i){
-shared.ex.splice(i,1);
-save();
-displayEx();
+    // Stats
+    document.getElementById("myExCount").innerText = users[currentUser].myEx;
+    document.getElementById("myTaskCount").innerText = users[currentUser].myTasks;
 }
 
-// ===== OUVERTURE AVEC CACHE =====
-function openFile(type,i){
-let f;
-
-if(type==="resume") f=shared.resumes[i];
-else f=shared.ex[i];
-
-// 🔥 déjà ouvert → pas de re-download
-if(f.url){
-window.open(f.url);
-return;
+function saveAndRefresh() {
+    saveAll();
+    displayAll();
 }
 
-// 🔄 créer une seule fois
-let b=atob(f.data.split(',')[1]);
-let arr=new Uint8Array(b.length);
-
-for(let j=0;j<b.length;j++){
-arr[j]=b.charCodeAt(j);
+function toggleExInput() {
+    const type = document.getElementById("exType").value;
+    document.getElementById("eText").style.display = type === "txt" ? "block" : "none";
+    document.getElementById("ePdf").style.display = type === "pdf" ? "block" : "none";
 }
-
-let blob=new Blob([arr],{type:f.type || f.fileType});
-let url=URL.createObjectURL(blob);
-
-// stocker
-f.url = url;
-save();
-
-window.open(url);
-}
-
-// ===== DONE =====
-function markDone(i){
-users[currentUser].done.push(i);
-save();
-displayEx();
-displayStats();
-}
-
-// ===== TASK =====
-function addTask(){
-let t=tText.value;
-let d=tDate.value;
-
-shared.tasks.push({t,d,user:currentUser});
-users[currentUser].tasks.push(t);
-
-save();
-displayTasks();
-displayStats();
-}
-
-function displayTasks(){
-tList.innerHTML="";
-shared.tasks.forEach((t,i)=>{
-tList.innerHTML+=`<li>${t.d} ${t.t} (${t.user}) <button onclick="delTask(${i})">❌</button></li>`;
-});
-}
-
-function delTask(i){
-shared.tasks.splice(i,1);
-save();
-displayTasks();
-}
-
-// ===== SEARCH =====
-function searchExFunc(){
-let val=document.getElementById("searchEx").value.toLowerCase();
-document.querySelectorAll("#eList .card").forEach(c=>{
-c.style.display=c.innerText.toLowerCase().includes(val)?"block":"none";
-});
-}
-
-// ===== FILTER =====
-function filterMine(){
-eList.innerHTML="";
-shared.ex.forEach((ex,i)=>{
-if(ex.user===currentUser){
-eList.innerHTML+=`<div class="card"><h4>${ex.title}</h4></div>`;
-}
-});
-}
-
-// ===== STATS =====
-function displayStats(){
-myExCount.innerText=users[currentUser].myEx.length;
-myDone.innerText=users[currentUser].done.length;
-globalEx.innerText=shared.ex.length;
-globalTasks.innerText=shared.tasks.length;
-globalRes.innerText=shared.resumes.length;
-
-let p=Math.round((users[currentUser].done.length/(shared.ex.length||1))*100);
-bar.style.width=p+"%";
-progressText.innerText=p+"% terminé";
-}
-
-// SAVE
-function save(){
-localStorage.setItem("users",JSON.stringify(users));
-localStorage.setItem("shared",JSON.stringify(shared));
-}
-
-// INIT
-function displayAll(){
-nameDisplay.innerText=currentUser;
-document.querySelector('h2').style.display='none';
-studentName.style.display='none';
-studentPass.style.display='none';
-
-displayResumes();
-displayEx();
-displayTasks();
-displayStats();
-}
-
-if(localStorage.getItem("currentUser")){
-currentUser=localStorage.getItem("currentUser");
-displayAll();
-}
-
 </script>
-
 </body>
 </html>

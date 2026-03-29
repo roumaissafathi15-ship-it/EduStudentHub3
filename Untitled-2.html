@@ -13,143 +13,28 @@
   --danger: #ff6b81;
   --dark: #5d4e6d;
 }
-body {
-  font-family: 'Poppins', 'Segoe UI', sans-serif;
-  margin: 0;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  color: #fff;
-  text-align: center;
-  min-height: 100vh;
-  padding-bottom: 80px;
-}
-#auth-container {
-  background: #fff;
-  color: #333;
-  padding: 30px;
-  border-radius: 30px;
-  margin: 50px auto;
-  width: 85%;
-  max-width: 400px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-}
+body { font-family: 'Poppins', sans-serif; margin:0; background: linear-gradient(135deg, var(--primary), var(--secondary)); color:#fff; text-align:center; min-height:100vh; padding-bottom:80px; }
+#auth-container { background:#fff; color:#333; padding:30px; border-radius:30px; margin:50px auto; width:85%; max-width:400px; box-shadow:0 20px 40px rgba(0,0,0,0.2); }
 #dashboard { display:none; }
 .logged-in #dashboard { display:block; }
 .logged-in #auth-container { display:none; }
-
-input, textarea {
-  padding: 12px;
-  border-radius: 15px;
-  border: 1px solid #ddd;
-  margin: 8px 0;
-  width: 90%;
-  font-size: 16px;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-}
-button {
-  padding: 14px 30px;
-  border-radius: 30px;
-  border: none;
-  cursor: pointer;
-  font-weight: bold;
-  transition: 0.3s;
-  margin: 10px 5px;
-  font-family: 'Poppins', sans-serif;
-}
-.btn-main {
-  background: var(--success);
-  color: white;
-  width: 95%;
-  box-shadow: 0 5px 15px rgba(255, 180, 180, 0.4);
-}
-.btn-delete {
-  background: var(--danger);
-  color: white;
-  padding: 6px 14px;
-  font-size: 0.85em;
-  border-radius: 10px;
-}
-.card {
-  background: rgba(255, 255, 255, 0.15);
-  color: #333;
-  margin: 15px 0;
-  padding: 20px;
-  border-radius: 20px;
-  text-align: left;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-  border-left: 5px solid var(--primary);
-}
-.btn-open {
-  display: inline-block;
-  margin-top: 10px;
-  background: var(--primary);
-  color: white;
-  font-weight: bold;
-  text-decoration: none;
-  padding: 8px 22px;
-  border-radius: 25px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-}
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  background: #fff;
-  display: flex;
-  justify-content: space-around;
-  padding: 12px 0;
-  box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
-  z-index: 100;
-}
-.bottom-nav button {
-  background: none;
-  color: var(--primary);
-  margin: 0;
-  padding: 5px;
-  font-size: 1.6em;
-}
-.section { display: none; }
-.section.active { display: block; }
-
-#msg {
-  position: fixed;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--success);
-  color: white;
-  padding: 12px 24px;
-  border-radius: 20px;
-  display: none;
-  z-index: 1000;
-  font-weight: bold;
-}
-
-.counter {
-  background: rgba(255,255,255,0.2);
-  padding: 6px 12px;
-  border-radius: 15px;
-  margin: 8px;
-  font-weight: bold;
-}
-.chat-box {
-  max-height: 300px;
-  overflow-y: auto;
-  background: rgba(255,255,255,0.1);
-  padding: 10px;
-  border-radius: 15px;
-}
-.chat-message {
-  margin: 10px 0;
-  padding: 8px 12px;
-  background: rgba(255,255,255,0.3);
-  border-radius: 12px;
-  position: relative;
-}
-.chat-message small { font-size: 0.75em; display:block; color:#333; }
-.chat-actions { position: absolute; top: 5px; right: 10px; }
-.online-user { font-weight:bold; color:#0f0; }
+input, textarea { padding:12px; border-radius:15px; border:1px solid #ddd; margin:8px 0; width:90%; font-size:16px; display:block; margin-left:auto; margin-right:auto; }
+button { padding:14px 30px; border-radius:30px; border:none; cursor:pointer; font-weight:bold; transition:0.3s; margin:10px 5px; font-family:'Poppins', sans-serif; }
+.btn-main { background: var(--success); color:white; width:95%; box-shadow:0 5px 15px rgba(255,180,180,0.4); }
+.btn-delete { background: var(--danger); color:white; padding:6px 14px; font-size:0.85em; border-radius:10px; }
+.card { background: rgba(255,255,255,0.15); color:#333; margin:15px 0; padding:20px; border-radius:20px; text-align:left; box-shadow:0 5px 15px rgba(0,0,0,0.1); border-left:5px solid var(--primary); }
+.btn-open { display:inline-block; margin-top:10px; background:var(--primary); color:white; font-weight:bold; text-decoration:none; padding:8px 22px; border-radius:25px; box-shadow:0 3px 8px rgba(0,0,0,0.1); }
+.bottom-nav { position: fixed; bottom:0; width:100%; background:#fff; display:flex; justify-content:space-around; padding:12px 0; box-shadow:0 -5px 15px rgba(0,0,0,0.1); z-index:100; }
+.bottom-nav button { background:none; color:var(--primary); margin:0; padding:5px; font-size:1.6em; }
+.section { display:none; }
+.section.active { display:block; }
+#msg { position: fixed; top:10px; left:50%; transform:translateX(-50%); background: var(--success); color:white; padding:12px 24px; border-radius:20px; display:none; z-index:1000; font-weight:bold; }
+.counter { background: rgba(255,255,255,0.2); padding:6px 12px; border-radius:15px; margin:8px; font-weight:bold; }
+.chat-box { max-height:300px; overflow-y:auto; background: rgba(255,255,255,0.1); padding:10px; border-radius:15px; }
+.chat-message { margin:10px 0; padding:8px 12px; background: rgba(255,255,255,0.3); border-radius:12px; position:relative; word-wrap: break-word; }
+.chat-message small { font-size:0.75em; display:block; color:#333; }
+.chat-actions { position:absolute; top:5px; right:10px; }
+a { color:blue; text-decoration:underline; }
 </style>
 </head>
 <body>
@@ -224,7 +109,7 @@ button {
     <input id="chatInput" placeholder="Écrire un message...">
     <input id="chatImage" type="file" accept="image/*">
     <button class="btn-main" onclick="sendMessage()">Envoyer 💖</button>
-    <button class="btn-delete" style="margin-top:10px;" onclick="clearChat()">Vider la discussion 🗑️</button>
+    <button class="btn-main" style="background:#ff6b81;" onclick="clearChat()">Vider discussion</button>
     <div><strong>Utilisateurs en ligne :</strong> <span id="onlineUsers"></span></div>
   </div>
 </div>
@@ -236,6 +121,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getDatabase, ref, push, onValue, remove, set, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+// Config Firebase
 const firebaseConfig = {
   apiKey:"AIzaSyBNGA_rCPQRErmQxT4tkvCT0R3DGIPcV-Y",
   authDomain:"edustudenthub.firebaseapp.com",
@@ -247,7 +133,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 
-// ----- Message ----- 
+// Message affichage
 function showMessage(text, success=true){
   const msg=document.getElementById("msg");
   msg.innerText=text;
@@ -256,7 +142,7 @@ function showMessage(text, success=true){
   setTimeout(()=>msg.style.display='none',2500);
 }
 
-// ----- Auth ----- 
+// Auth
 window.register = function(){
   const email=document.getElementById("email").value.trim();
   const password=document.getElementById("password").value.trim();
@@ -265,7 +151,6 @@ window.register = function(){
     .then(u=>showMessage("Compte créé !"))
     .catch(e=>showMessage(e.message,false));
 };
-
 window.login = function(){
   const email=document.getElementById("email").value.trim();
   const password=document.getElementById("password").value.trim();
@@ -273,7 +158,6 @@ window.login = function(){
   signInWithEmailAndPassword(auth,email,password)
     .catch(e=>showMessage(e.message,false));
 };
-
 window.confirmLogout = function(){
   if(confirm("Voulez-vous vraiment vous déconnecter ?")){
     signOut(auth).then(()=>{showMessage("Déconnecté !"); location.reload();})
@@ -281,15 +165,15 @@ window.confirmLogout = function(){
   }
 };
 
-// ----- Sections ----- 
+// Sections
 window.show = function(id){
-  const sections = document.querySelectorAll(".section");
+  const sections=document.querySelectorAll(".section");
   sections.forEach(s=>s.classList.remove("active"));
-  const target = document.getElementById(id);
+  const target=document.getElementById(id);
   if(target) target.classList.add("active");
 };
 
-// ----- Publish ----- 
+// Publish
 window.publish=function(path,tId,cId){
   const title=document.getElementById(tId).value.trim();
   const content=document.getElementById(cId).value.trim();
@@ -309,164 +193,93 @@ window.publish=function(path,tId,cId){
   }).catch(err=>showMessage(err.message,false));
 };
 
-// ----- Supprimer un élément partagé ----- 
+// Supprimer message partagé
 window.deleteItem = function(path, id){
   if(confirm("Supprimer ?")){
-    remove(ref(db, `shared/${path}/${id}`))
-      .then(() => {
-        showMessage("Supprimé !");
-        get(ref(db, `shared/${path}`)).then(snapshot => {
-          renderList(path==='ex'?'eList':path==='pdfs'?'rList':'tList', snapshot.val(), path);
-        });
-      })
-      .catch(err => showMessage(err.message,false));
+    remove(ref(db, `shared/${path}/${id}`)).then(()=>{
+      showMessage("Supprimé !");
+    }).catch(err=>showMessage(err.message,false));
   }
 };
 
-// ----- Exercices réalisés ----- 
-window.markDone = function(exId){
-  const doneRef = ref(db, `done/${auth.currentUser.uid}/${exId}`);
-  get(child(ref(db,'shared/ex'), exId)).then(snapshot=>{
-    if(snapshot.exists()){
-      set(doneRef, snapshot.val()).then(()=>{
-        showMessage("Exercice marqué comme réalisé ✅");
-        renderDoneEx();
+// Chat : envoyer
+window.sendMessage=function(){
+  if(!auth.currentUser) return showMessage("Connectez-vous !");
+  const input=document.getElementById("chatInput");
+  const file=document.getElementById("chatImage").files[0];
+
+  if(file){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      push(ref(db,'chat'),{
+        user:auth.currentUser.uid,
+        name:auth.currentUser.email.split('@')[0],
+        type:'image',
+        data:e.target.result,
+        time:new Date().toLocaleTimeString()
       });
     }
-  });
-};
-
-window.removeDone = function(id){
-  if(confirm("Supprimer l'exercice réalisé ?")){
-    remove(ref(db, `done/${auth.currentUser.uid}/${id}`))
-      .then(() => {
-        showMessage("Exercice réalisé supprimé !");
-        renderDoneEx();
-      })
-      .catch(err => showMessage(err.message,false));
-  }
-};
-
-function renderDoneEx(){
-  const div=document.getElementById("doneList");
-  get(ref(db,`done/${auth.currentUser.uid}`)).then(snapshot=>{
-    const data=snapshot.val()||{};
-    div.innerHTML="";
-    Object.keys(data).forEach(key=>{
-      const item=data[key];
-      const isLink=item.data.startsWith("http");
-      const action=isLink?`<a href="${item.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p style="background:#eee;padding:10px;border-radius:8px;color:#333;">${item.data}</p>`;
-      div.innerHTML+=`<div class="card">
-        <h4>${item.title}</h4>
-        <small>${item.time||''}</small>
-        <div>${action}</div>
-        <div style="text-align:right">
-          <button class="btn-delete" onclick="removeDone('${key}')">Supprimer</button>
-        </div>
-      </div>`;
+    reader.readAsDataURL(file);
+  } else if(input.value.trim()){
+    let msgText = input.value.trim();
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    msgText = msgText.replace(urlRegex, url => `<a href="${url}" target="_blank">${url}</a>`);
+    push(ref(db,'chat'),{
+      user:auth.currentUser.uid,
+      name:auth.currentUser.email.split('@')[0],
+      type:'text',
+      data:msgText,
+      time:new Date().toLocaleTimeString()
     });
-  });
-}
+  }
+  input.value="";
+  document.getElementById("chatImage").value="";
+};
 
-// ----- Liste partagée ----- 
-function renderList(divId,items,path){
-  const div=document.getElementById(divId);
-  div.innerHTML="";
-  if(!items) return;
-  Object.keys(items).forEach(key=>{
-    const item=items[key];
-    const isLink=item.data.startsWith("http");
-    const action=isLink?`<a href="${item.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p style="background:#eee;padding:10px;border-radius:8px;color:#333;">${item.data}</p>`;
-    div.innerHTML+=`<div class="card">
-      <h4>${item.title}</h4>
-      <small>Par ${item.email} à ${item.time||''}</small>
-      <div>${action}</div>
-      <div style="text-align:right">
-        <button class="btn-main" onclick="markDone('${key}')">Terminé ✅</button>
-        ${item.user===auth.currentUser.uid?`<button class="btn-delete" onclick="deleteItem('${path}','${key}')">Effacer</button>`:''}
-      </div>
-    </div>`;
-  });
-}
+// Supprimer message individuel
+window.deleteChat = function(key){
+  if(confirm("Supprimer ce message ?")) remove(ref(db,'chat/'+key));
+};
 
-// ----- Auth state ----- 
+// Vider chat
+window.clearChat = function(){
+  if(confirm("Vider toute la discussion ?")) remove(ref(db,'chat'));
+};
+
+// Render chat
+const chatBox = document.getElementById("chatBox");
+onValue(ref(db,'chat'), snapshot=>{
+  chatBox.innerHTML="";
+  const messages = snapshot.val()||{};
+  Object.keys(messages).forEach(key=>{
+    const m = messages[key];
+    let content = m.type==='image'?`<img src="${m.data}" style="max-width:150px;border-radius:8px;">`:m.data;
+    chatBox.innerHTML += `
+      <div class="chat-message">
+        <strong>${m.name}</strong>: ${content}
+        <small>${m.time}</small>
+        ${m.user===auth.currentUser?.uid?`<div class="chat-actions"><button onclick="deleteChat('${key}')">Supprimer</button></div>`:''}
+      </div>`;
+  });
+  chatBox.scrollTop = chatBox.scrollHeight;
+});
+
+// Auth state : dashboard et compte connecté
 onAuthStateChanged(auth,user=>{
   if(user){
     document.body.classList.add("logged-in");
     document.getElementById("nameDisplay").innerText=user.email;
 
-    const previousData = { pdfs:{}, ex:{}, tasks:{} };
-
-    function checkNewItems(path, items){
-      Object.keys(items||{}).forEach(key=>{
-        if(!previousData[path][key] && items[key].user !== auth.currentUser.uid){
-          showMessage(`Nouvel ${path==='pdfs'?'résumé':path==='ex'?'exercice':'tâche'} partagé par ${items[key].email} !`);
-        }
-      });
-      previousData[path]=items||{};
-    }
-
-    onValue(ref(db,'shared'),snapshot=>{
-      const data=snapshot.val()||{pdfs:{},ex:{},tasks:{}};
-      renderList('rList',data.pdfs,'pdfs');
-      renderList('eList',data.ex,'ex');
-      renderList('tList',data.tasks,'tasks');
+    // Compteurs résumés, ex, tâches
+    onValue(ref(db,'shared'), snapshot=>{
+      const data = snapshot.val()||{pdfs:{},ex:{},tasks:{}};
       document.getElementById("pdfCount").innerText=Object.keys(data.pdfs||{}).filter(k=>data.pdfs[k].user===user.uid).length;
       document.getElementById("exCount").innerText=Object.keys(data.ex||{}).filter(k=>data.ex[k].user===user.uid).length;
       document.getElementById("taskCount").innerText=Object.keys(data.tasks||{}).filter(k=>data.tasks[k].user===user.uid).length;
-      checkNewItems('pdfs',data.pdfs);
-      checkNewItems('ex',data.ex);
-      checkNewItems('tasks',data.tasks);
-    });
-
-    renderDoneEx();
-
-    // ----- Chat ----- 
-    const chatRef = ref(db,'chat');
-    onValue(chatRef,snapshot=>{
-      const messages=snapshot.val()||{};
-      const chatBox = document.getElementById("chatBox");
-      chatBox.innerHTML="";
-      Object.keys(messages).forEach(key=>{
-        const m=messages[key];
-        chatBox.innerHTML+=`
-          <div class="chat-message">
-            <strong>${m.name||m.email}</strong>: ${m.text}
-            <small>${m.time}</small>
-            ${m.user===auth.currentUser.uid?`<div class="chat-actions"><button class="btn-delete" onclick="deleteChat('${key}')">Supprimer</button></div>`:''}
-          </div>`;
-      });
-      chatBox.scrollTop = chatBox.scrollHeight;
     });
   }
 });
-
-// ----- Chat functions ----- 
-window.sendMessage = function(){
-  const input=document.getElementById("chatInput");
-  const text=input.value.trim();
-  if(!text) return;
-  const newMsgRef=push(ref(db,'chat'));
-  set(newMsgRef,{
-    user:auth.currentUser.uid,
-    email:auth.currentUser.email,
-    name:auth.currentUser.email.split('@')[0],
-    text:text,
-    time:new Date().toLocaleTimeString()
-  }).then(()=>input.value="").catch(e=>showMessage(e.message,false));
-};
-
-window.deleteChat=function(key){
-  if(confirm("Supprimer ce message ?")){
-    remove(ref(db,`chat/${key}`)).then(()=>showMessage("Message supprimé !"));
-  }
-};
-
-window.clearChat=function(){
-  if(confirm("Vider toute la discussion ?")){
-    remove(ref(db,'chat')).then(()=>showMessage("Discussion vidée !"));
-  }
-};
 </script>
+
 </body>
 </html>

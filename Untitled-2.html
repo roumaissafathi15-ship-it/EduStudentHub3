@@ -177,6 +177,7 @@ button {
     <button onclick="show('exSec')">📝💖</button>
     <button onclick="show('taskSec')">🗂🦋</button>
     <button onclick="show('doneExSec')">✔️🌷</button>
+    <button onclick="show('doneTaskSec')">✅🦋</button>
     <button onclick="show('chatSec')">💬🟢</button>
     <button onclick="confirmLogout()" style="color:var(--danger)">🚪</button>
   </div>
@@ -217,7 +218,11 @@ button {
     <div id="doneList"></div>
   </div>
 
-  <!-- Chat -->
+  <div id="doneTaskSec" class="section">
+    <h3>✅🦋 Tâches réalisées</h3>
+    <div id="doneTaskList"></div>
+  </div>
+
   <div id="chatSec" class="section">
     <h3>💬🟢 Chat en ligne</h3>
     <div class="chat-box" id="chatBox"></div>
@@ -364,6 +369,48 @@ function renderDoneEx(){
   });
 }
 
+// ----- Tâches réalisées -----
+window.markTaskDone = function(taskId){
+  const doneRef = ref(db, `doneTasks/${auth.currentUser.uid}/${taskId}`);
+  get(child(ref(db,'shared/tasks'), taskId)).then(snapshot=>{
+    if(snapshot.exists()){
+      set(doneRef, snapshot.val()).then(()=>{ 
+        showMessage("Tâche marquée ✅"); 
+        renderDoneTasks(); 
+      });
+    }
+  });
+};
+
+window.removeDoneTask = function(taskId){
+  if(confirm("Supprimer la tâche réalisée ?")){
+    remove(ref(db, `doneTasks/${auth.currentUser.uid}/${taskId}`))
+    .then(()=>{ showMessage("Tâche supprimée !"); renderDoneTasks(); })
+    .catch(err => showMessage(err.message,false));
+  }
+};
+
+function renderDoneTasks(){
+  const div = document.getElementById("doneTaskList");
+  get(ref(db,`doneTasks/${auth.currentUser.uid}`)).then(snapshot=>{
+    const data = snapshot.val() || {};
+    div.innerHTML = "";
+    Object.keys(data).forEach(key=>{
+      const item = data[key];
+      const isLink=item.data.startsWith("http");
+      const action=isLink?`<a href="${item.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p style="background:#eee;padding:10px;border-radius:8px;color:#333;">${item.data}</p>`;
+      div.innerHTML += `<div class="card">
+        <h4>${item.title}</h4>
+        <small>${item.time||''}</small>
+        <div>${action}</div>
+        <div style="text-align:right">
+          <button class="btn-delete" onclick="removeDoneTask('${key}')">Supprimer</button>
+        </div>
+      </div>`;
+    });
+  });
+}
+
 // ----- Récupérer et afficher les contenus partagés -----
 function renderSharedContent(){
   const pdfList = document.getElementById("rList");
@@ -378,10 +425,11 @@ function renderSharedContent(){
     const pdfs = data.pdfs || {};
     Object.keys(pdfs).forEach(k=>{
       const p = pdfs[k];
+      const action = p.data.startsWith("http")?`<a href="${p.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p>${p.data}</p>`;
       pdfList.innerHTML += `
         <div class="card">
           <strong>${p.title}</strong><br>
-          <a href="${p.data}" target="_blank" class="btn-open">Ouvrir 📂</a>
+          ${action}
           ${p.user===auth.currentUser?.uid?`<button class="btn-delete" onclick="deleteItem('pdfs','${k}')">Supprimer</button>`:''}
         </div>`;
     });
@@ -391,11 +439,15 @@ function renderSharedContent(){
     const exs = data.ex || {};
     Object.keys(exs).forEach(k=>{
       const e = exs[k];
+      const action = e.data.startsWith("http")?`<a href="${e.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p>${e.data}</p>`;
       exList.innerHTML += `
         <div class="card">
           <strong>${e.title}</strong><br>
-          <p>${e.data}</p>
+          ${action}
+          <div style="text-align:right">
+          <button class="btn-main" onclick="markDone('${k}')">Fait ✅</button>
           ${e.user===auth.currentUser?.uid?`<button class="btn-delete" onclick="deleteItem('ex','${k}')">Supprimer</button>`:''}
+          </div>
         </div>`;
     });
 
@@ -404,85 +456,49 @@ function renderSharedContent(){
     const tasks = data.tasks || {};
     Object.keys(tasks).forEach(k=>{
       const t = tasks[k];
+      const action = t.data.startsWith("http")?`<a href="${t.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p>${t.data}</p>`;
       tList.innerHTML += `
         <div class="card">
           <strong>${t.title}</strong><br>
-          <p>${t.data}</p>
+          ${action}
+          <div style="text-align:right">
+          <button class="btn-main" onclick="markTaskDone('${k}')">Fait ✅</button>
           ${t.user===auth.currentUser?.uid?`<button class="btn-delete" onclick="deleteItem('tasks','${k}')">Supprimer</button>`:''}
+          </div>
         </div>`;
     });
+
+    document.getElementById("pdfCount").innerText=Object.keys(pdfs).length;
+    document.getElementById("exCount").innerText=Object.keys(exs).length;
+    document.getElementById("taskCount").innerText=Object.keys(tasks).length;
   });
 }
 
-// ----- Auth state -----
+// ----- Auth State -----
 onAuthStateChanged(auth,user=>{
   if(user){
     document.body.classList.add("logged-in");
-    document.getElementById("nameDisplay").innerText=user.email;
-
+    document.getElementById("nameDisplay").innerText=user.email.split('@')[0];
     renderSharedContent();
     renderDoneEx();
-
-    // ----- Chat -----
-    const chatRef = ref(db,'chat');
-    onValue(chatRef,snapshot=>{
-      const messages=snapshot.val()||{};
-      const chatBox=document.getElementById("chatBox");
-      chatBox.innerHTML="";
-      Object.keys(messages).forEach(key=>{
-        const m = messages[key];
-        const content = m.type==='image'?`<img src="${m.data}" style="max-width:100px;border-radius:8px;">`:`${m.data}`;
-        chatBox.innerHTML+=`<div class="chat-message">
-          <strong>${m.user}</strong> : ${content}
-          <small>${m.time||''}</small>
-        </div>`;
-      });
-      chatBox.scrollTop=chatBox.scrollHeight;
-    });
-
-    // ----- Utilisateurs en ligne -----
-    const onlineRef = ref(db,'online');
-    set(ref(db,'online/'+user.uid), user.email);
-    window.addEventListener("beforeunload",()=>remove(ref(db,'online/'+user.uid)));
-    onValue(onlineRef,snap=>{
-      const data=snap.val()||{};
-      document.getElementById("onlineUsers").innerText=Object.values(data).join(", ");
-    });
+    renderDoneTasks();
+  }else{
+    document.body.classList.remove("logged-in");
   }
 });
 
-// ----- Chat -----
-window.sendMessage=function(){
-  const msg=document.getElementById("chatInput").value.trim();
-  const fileInput=document.getElementById("chatImage");
-  if(!msg && !fileInput.files[0]) return;
-  
-  const newMsgRef=push(ref(db,'chat'));
-  const userEmail=auth.currentUser.email;
-  const time=new Date().toLocaleTimeString();
-
-  if(fileInput.files[0]){
-    const reader=new FileReader();
-    reader.onload=function(e){
-      set(newMsgRef,{
-        data:e.target.result,
-        user:userEmail,
-        type:'image',
-        time:time
-      });
-      fileInput.value="";
-    }
-    reader.readAsDataURL(fileInput.files[0]);
-  } else {
-    set(newMsgRef,{
-      data:msg,
-      user:userEmail,
-      type:'text',
-      time:time
-    });
-    document.getElementById("chatInput").value="";
+// ----- Auto-save (30s) -----
+setInterval(()=>{
+  if(auth.currentUser){
+    const autoSaveData = {
+      pdfs: document.getElementById("rList").innerHTML,
+      exs: document.getElementById("eList").innerHTML,
+      tasks: document.getElementById("tList").innerHTML
+    };
+    set(ref(db, `autoSave/${auth.currentUser.uid}`), autoSaveData);
   }
-};
+}, 30000);
+
 </script>
 </body>
 </html>

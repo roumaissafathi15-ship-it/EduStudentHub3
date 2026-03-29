@@ -420,7 +420,9 @@ function renderSharedContent(){
     Object.keys(exs).forEach(k=>{
       const p = exs[k];
       const action = p.data.startsWith("http")?`<a href="${p.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p>${p.data}</p>`;
-      exList.innerHTML += `<div class="card"><strong>${p.title}</strong><br>${action}${p.user===auth.currentUser?.uid?`<button class="btn-delete" onclick="deleteItem('ex','${k}')">Supprimer</button>`:''} <button class="btn-main" onclick="markDone('${k}')">Réalisé ✅</button></div>`;
+      exList.innerHTML += `<div class="card"><strong>${p.title}</strong><br>${action}
+      <button class="btn-main" onclick="markDone('${k}')">✅ Réaliser</button>
+      ${p.user===auth.currentUser?.uid?`<button class="btn-delete" onclick="deleteItem('ex','${k}')">Supprimer</button>`:''}</div>`;
     });
 
     // Tâches
@@ -429,94 +431,78 @@ function renderSharedContent(){
     Object.keys(tasks).forEach(k=>{
       const p = tasks[k];
       const action = p.data.startsWith("http")?`<a href="${p.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p>${p.data}</p>`;
-      tList.innerHTML += `<div class="card"><strong>${p.title}</strong><br>${action}${p.user===auth.currentUser?.uid?`<button class="btn-delete" onclick="deleteItem('tasks','${k}')">Supprimer</button>`:''} <button class="btn-main" onclick="markTaskDone('${k}')">Réalisé ✅</button></div>`;
+      tList.innerHTML += `<div class="card"><strong>${p.title}</strong><br>${action}
+      <button class="btn-main" onclick="markTaskDone('${k}')">✅ Réaliser</button>
+      ${p.user===auth.currentUser?.uid?`<button class="btn-delete" onclick="deleteItem('tasks','${k}')">Supprimer</button>`:''}</div>`;
     });
 
-    // Compteurs
-    document.getElementById("pdfCount").innerText=Object.keys(pdfs).length;
-    document.getElementById("exCount").innerText=Object.keys(exs).length;
-    document.getElementById("taskCount").innerText=Object.keys(tasks).length;
+    // Mettre à jour compteur
+    document.getElementById("pdfCount").innerText = Object.keys(pdfs).length;
+    document.getElementById("exCount").innerText = Object.keys(exs).length;
+    document.getElementById("taskCount").innerText = Object.keys(tasks).length;
   });
 }
 
-// ----- Chat ----- 
-const chatRef = ref(db,'chat');
+// ----- Chat -----
+function linkify(text){
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  return text.replace(urlRegex, url=>`<a href="${url}" target="_blank">${url}</a>`);
+}
 
 window.sendMessage = function(){
-  const input = document.getElementById("chatInput");
-  const text = input.value.trim();
+  const msgInput = document.getElementById("chatInput");
+  const text = msgInput.value.trim();
   if(!text) return;
-  const newMsgRef = push(chatRef);
-  set(newMsgRef,{
-    text:text,
-    user:auth.currentUser.email.split('@')[0],
-    uid:auth.currentUser.uid,
-    time:new Date().toLocaleTimeString()
-  }).then(()=>{ input.value=""; showMessage("Message envoyé !"); });
-};
-
-// Supprimer un message (uniquement si message personnel)
-window.deleteMessage = function(id, uid){
-  if(uid !== auth.currentUser.uid) return showMessage("Vous ne pouvez supprimer que vos messages.", false);
-  if(confirm("Supprimer ce message ?")){
-    remove(ref(db, `chat/${id}`))
-      .then(()=>showMessage("Message supprimé !"));
-  }
-};
-
-// Modifier un message (uniquement si message personnel)
-window.editMessage = function(id, uid){
-  if(uid !== auth.currentUser.uid) return showMessage("Vous ne pouvez modifier que vos messages.", false);
-  const newText = prompt("Modifier le message :");
-  if(newText!==null && newText.trim()!==""){
-    update(ref(db, `chat/${id}`), {text:newText})
-      .then(()=>showMessage("Message modifié !"));
-  }
-};
-
-// Vider tout le chat
-window.clearChat = function(){
-  if(confirm("Vider tout le chat ?")){
-    remove(chatRef).then(()=>showMessage("Chat vidé !"));
-  }
-};
-
-// Afficher le chat en direct
-onValue(chatRef, snapshot=>{
-  const chatBox = document.getElementById("chatBox");
-  const data = snapshot.val() || {};
-  chatBox.innerHTML = '';
-  Object.keys(data).forEach(id=>{
-    const m = data[id];
-    const isOwner = m.uid === auth.currentUser.uid;
-    chatBox.innerHTML += `
-      <div class="chat-message">
-        <strong>${m.user}</strong> <small>${m.time}</small><br>
-        ${m.text}
-        ${isOwner ? `<div class="chat-actions">
-          <button class="btn-delete" onclick="deleteMessage('${id}','${m.uid}')">🗑️</button>
-          <button class="btn-main" onclick="editMessage('${id}','${m.uid}')">✏️</button>
-        </div>` : ''}
-      </div>
-    `;
+  push(ref(db,'chat'), {
+    uid: auth.currentUser.uid,
+    user: auth.currentUser.email,
+    text: text,
+    time: new Date().toLocaleTimeString()
   });
-});
+  msgInput.value = '';
+};
 
-// ----- Sauvegarde automatique toutes les 30s -----
-setInterval(renderSharedContent,30000);
-setInterval(renderDoneEx,30000);
-setInterval(renderDoneTasks,30000);
+function renderChat(){
+  const chatBox = document.getElementById("chatBox");
+  onValue(ref(db,'chat'), snapshot=>{
+    const data = snapshot.val()||{};
+    chatBox.innerHTML='';
+    Object.keys(data).forEach(k=>{
+      const m = data[k];
+      const isOwner = m.uid===auth.currentUser.uid;
+      chatBox.innerHTML+=`<div class="chat-message">
+        <strong>${m.user}</strong> <small>${m.time}</small><br>
+        ${linkify(m.text)}
+      </div>`;
+    });
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+}
+
+// ----- Online users -----
+function updateOnlineUsers(){
+  onValue(ref(db,'chat'), snapshot=>{
+    const data=snapshot.val()||{};
+    const users = [...new Set(Object.values(data).map(m=>m.user))];
+    document.getElementById("onlineUsers").innerText = users.join(', ');
+  });
+}
 
 // ----- Auth State -----
 onAuthStateChanged(auth,user=>{
   if(user){
     document.body.classList.add("logged-in");
-    document.getElementById("nameDisplay").innerText=user.email.split('@')[0];
+    document.getElementById("nameDisplay").innerText = user.email;
     renderSharedContent();
     renderDoneEx();
     renderDoneTasks();
+    renderChat();
+    updateOnlineUsers();
+  } else {
+    document.body.classList.remove("logged-in");
   }
 });
+
 </script>
 </body>
 </html>

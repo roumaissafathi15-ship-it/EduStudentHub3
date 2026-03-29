@@ -7,12 +7,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --primary: #f78da7;
-  --secondary: #c39bd3;
-  --success: #ffb347;
-  --danger: #ff6b81;
-  --dark: #5d4e6d;
+  --primary: #f78da7; /* rose pastel */
+  --secondary: #c39bd3; /* violet doux */
+  --success: #ffb347; /* pêche */
+  --danger: #ff6b81; /* rouge doux */
+  --dark: #5d4e6d; /* gris violet */
 }
+
 body {
   font-family: 'Poppins', 'Segoe UI', sans-serif;
   margin: 0;
@@ -22,6 +23,7 @@ body {
   min-height: 100vh;
   padding-bottom: 80px;
 }
+
 #auth-container {
   background: #fff;
   color: #333;
@@ -32,9 +34,11 @@ body {
   max-width: 400px;
   box-shadow: 0 20px 40px rgba(0,0,0,0.2);
 }
+
 #dashboard { display:none; }
 .logged-in #dashboard { display:block; }
 .logged-in #auth-container { display:none; }
+
 input, textarea {
   padding: 12px;
   border-radius: 15px;
@@ -46,6 +50,7 @@ input, textarea {
   margin-left: auto;
   margin-right: auto;
 }
+
 button {
   padding: 14px 30px;
   border-radius: 30px;
@@ -56,12 +61,14 @@ button {
   margin: 10px 5px;
   font-family: 'Poppins', sans-serif;
 }
+
 .btn-main {
   background: var(--success);
   color: white;
   width: 95%;
   box-shadow: 0 5px 15px rgba(255, 180, 180, 0.4);
 }
+
 .btn-delete {
   background: var(--danger);
   color: white;
@@ -69,6 +76,7 @@ button {
   font-size: 0.85em;
   border-radius: 10px;
 }
+
 .card {
   background: rgba(255, 255, 255, 0.15);
   color: #333;
@@ -79,6 +87,7 @@ button {
   box-shadow: 0 5px 15px rgba(0,0,0,0.1);
   border-left: 5px solid var(--primary);
 }
+
 .btn-open {
   display: inline-block;
   margin-top: 10px;
@@ -90,6 +99,7 @@ button {
   border-radius: 25px;
   box-shadow: 0 3px 8px rgba(0,0,0,0.1);
 }
+
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -98,21 +108,278 @@ button {
   display: flex;
   justify-content: space-around;
   padding: 12px 0;
-  box-shadow: 0 -5px 15px rgba
-  
-  color: white;
-  font-weight: bold;
-  text-decoration: none;
-  padding: 8px 22px;
-  border-radius: 25px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+  z-index: 100;
 }
-.bottom-nav {
+
+.bottom-nav button {
+  background: none;
+  color: var(--primary);
+  margin: 0;
+  padding: 5px;
+  font-size: 1.6em;
+}
+
+.section { display: none; }
+.section.active { display: block; }
+
+#msg {
   position: fixed;
-  bottom: 0;
-  width: 100%;
-  background: #fff;
-  display: flex;
-  justify-content: space-around;
-  padding: 12px 0;
-  box-shadow: 0 -5px 15px
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--success);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 20px;
+  display: none;
+  z-index: 1000;
+  font-weight: bold;
+}
+
+.counter {
+  background: rgba(255,255,255,0.2);
+  padding: 6px 12px;
+  border-radius: 15px;
+  margin: 8px;
+  font-weight: bold;
+}
+</style>
+</head>
+<body>
+
+<div id="auth-container">
+<h2>🔐 EduStudentHub 🌸</h2>
+<input id="email" type="email" placeholder="Email">
+<input id="password" type="password" placeholder="Mot de passe">
+<button class="btn-main" onclick="login()">Se connecter</button>
+<button class="btn-main" onclick="register()">S’inscrire</button>
+</div>
+
+<div id="dashboard" class="container">
+<h2>Bonjour, <span id="nameDisplay"></span> 💖</h2>
+<button class="btn-main" style="background:#ff6b81;margin-bottom:10px;" onclick="confirmLogout()">Se déconnecter 🚪</button>
+
+<div class="counter">
+Résumés 🌸 : <span id="pdfCount">0</span> | Exercices 📝 : <span id="exCount">0</span> | Tâches 🦋 : <span id="taskCount">0</span>
+</div>
+
+<div class="bottom-nav">
+<button onclick="show('resumeSec')">📚🌸</button>
+<button onclick="show('exSec')">📝💖</button>
+<button onclick="show('taskSec')">🗂🦋</button>
+<button onclick="show('doneExSec')">✔️🌷</button>
+<button onclick="confirmLogout()" style="color:var(--danger)">🚪</button>
+</div>
+
+<!-- Résumés -->
+<div id="resumeSec" class="section active">
+<h3>📚🌸 Partager un résumé</h3>
+<div class="card" style="background:rgba(255,255,255,0.1);border:1px dashed white;">
+<input id="cTitle" placeholder="Nom du cours">
+<input id="cUrl" placeholder="Lien (http://...)">
+<button class="btn-main" onclick="publish('pdfs','cTitle','cUrl')">Publier 💖</button>
+</div>
+<div id="rList"></div>
+</div>
+
+<!-- Exercices -->
+<div id="exSec" class="section">
+<h3>📝💖 Exercices et textes</h3>
+<div class="card" style="background:rgba(255,255,255,0.1);border:1px dashed white;">
+<input id="eTitle" placeholder="Titre">
+<textarea id="eContent" placeholder="Énoncé ou lien..."></textarea>
+<button class="btn-main" onclick="publish('ex','eTitle','eContent')">Publier 💖</button>
+</div>
+<div id="eList"></div>
+</div>
+
+<!-- Tâches -->
+<div id="taskSec" class="section">
+<h3>🗂🦋 Tâches</h3>
+<div class="card" style="background:rgba(255,255,255,0.1);border:1px dashed white;">
+<input id="tTitle" placeholder="Titre">
+<textarea id="tContent" placeholder="Description..."></textarea>
+<button class="btn-main" onclick="publish('tasks','tTitle','tContent')">Publier 💖</button>
+</div>
+<div id="tList"></div>
+</div>
+
+<!-- Exercices réalisés -->
+<div id="doneExSec" class="section">
+<h3>✅🌷 Exercices réalisés</h3>
+<div id="doneList"></div>
+</div>
+
+</div>
+
+<div id="msg"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, push, onValue, remove, set, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+// Config Firebase
+const firebaseConfig = {
+apiKey:"AIzaSyBNGA_rCPQRErmQxT4tkvCT0R3DGIPcV-Y",
+authDomain:"edustudenthub.firebaseapp.com",
+projectId:"edustudenthub",
+databaseURL:"https://edustudenthub-default-rtdb.europe-west1.firebasedatabase.app",
+appId:"1:638666895614:web:b566af4aacf05e70fdf5af"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+
+// Message
+function showMessage(text, success=true){
+const msg=document.getElementById("msg");
+msg.innerText=text;
+msg.style.background=success?'var(--success)':'var(--danger)';
+msg.style.display='block';
+setTimeout(()=>msg.style.display='none',2500);
+}
+
+// Auth
+window.register = function(){
+const email=document.getElementById("email").value.trim();
+const password=document.getElementById("password").value.trim();
+if(!email||!password) return showMessage("Champs vides !",false);
+createUserWithEmailAndPassword(auth,email,password).then(u=>showMessage("Compte créé !")).catch(e=>showMessage(e.message,false));
+};
+
+window.login = function(){
+const email=document.getElementById("email").value.trim();
+const password=document.getElementById("password").value.trim();
+if(!email||!password) return showMessage("Champs vides !",false);
+signInWithEmailAndPassword(auth,email,password).then(u=>{}).catch(e=>showMessage(e.message,false));
+};
+
+// Déconnexion
+window.confirmLogout = function(){
+if(confirm("Voulez-vous vraiment vous déconnecter ?")){
+signOut(auth).then(()=>{showMessage("Déconnecté !"); location.reload();}).catch(err=>showMessage(err.message,false));
+}
+};
+
+// Surveille l'état
+onAuthStateChanged(auth,user=>{
+if(user){
+document.body.classList.add("logged-in");
+document.getElementById("nameDisplay").innerText=user.email;
+
+// Notifications temps réel
+const previousData = { pdfs:{}, ex:{}, tasks:{} };
+function checkNewItems(path, items){
+    Object.keys(items || {}).forEach(key=>{
+        if(!previousData[path][key] && items[key].user !== auth.currentUser.uid){
+            showMessage(`Nouvel ${path==='pdfs'?'résumé':path==='ex'?'exercice':'tâche'} partagé par ${items[key].email} !`);
+        }
+    });
+    previousData[path] = items || {};
+}
+
+// Écoute globale
+onValue(ref(db,'shared'),snapshot=>{
+    const data=snapshot.val()||{pdfs:{},ex:{},tasks:{}};
+    renderList('rList',data.pdfs,'pdfs');
+    renderList('eList',data.ex,'ex');
+    renderList('tList',data.tasks,'tasks');
+
+    // Compteurs
+    document.getElementById("pdfCount").innerText=Object.keys(data.pdfs||{}).filter(k=>data.pdfs[k].user===user.uid).length;
+    document.getElementById("exCount").innerText=Object.keys(data.ex||{}).filter(k=>data.ex[k].user===user.uid).length;
+    document.getElementById("taskCount").innerText=Object.keys(data.tasks||{}).filter(k=>data.tasks[k].user===user.uid).length;
+
+    // Notifications
+    checkNewItems('pdfs', data.pdfs);
+    checkNewItems('ex', data.ex);
+    checkNewItems('tasks', data.tasks);
+});
+
+renderDoneEx();
+}
+});
+
+// Publier
+window.publish=function(path,tId,cId){
+const title=document.getElementById(tId).value.trim();
+const content=document.getElementById(cId).value.trim();
+if(!title||!content) return showMessage("Champs vides !",false);
+const dataRef=ref(db,`shared/${path}`);
+const newItemRef=push(dataRef);
+set(newItemRef,{
+title:title,
+data:content,
+user:auth.currentUser.uid,
+email:auth.currentUser.email,
+time:new Date().toLocaleTimeString()
+}).then(()=>{
+document.getElementById(tId).value="";
+document.getElementById(cId).value="";
+showMessage("Partagé !");
+}).catch(err=>showMessage(err.message,false));
+};
+
+// Supprimer
+window.deleteItem=function(path,id){if(confirm("Supprimer ?")) remove(ref(db,`shared/${path}/${id}`));};
+
+// Exercices réalisés
+window.markDone=function(exId){
+const doneRef=ref(db,`done/${auth.currentUser.uid}/${exId}`);
+get(child(ref(db,'shared/ex'),exId)).then(snapshot=>{
+if(snapshot.exists()){
+set(doneRef,snapshot.val()).then(()=>renderDoneEx());
+}
+});
+};
+
+function renderDoneEx(){
+const div=document.getElementById("doneList");
+get(ref(db,`done/${auth.currentUser.uid}`)).then(snapshot=>{
+const data=snapshot.val()||{};
+div.innerHTML="";
+Object.keys(data).forEach(key=>{
+const item=data[key];
+const isLink=item.data.startsWith("http");
+const action=isLink?`<a href="${item.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p style="background:#eee;padding:10px;border-radius:8px;">${item.data}</p>`;
+div.innerHTML+=`<div class="card">
+<h4>${item.title}</h4>
+<small>${item.time||''}</small>
+<div>${action}</div>
+<div style="text-align:right"><button class="btn-delete" onclick="remove(ref(db,'done/${auth.currentUser.uid}/${key}'))">Supprimer</button></div>
+</div>`;
+});
+});
+}
+
+// Affichage liste
+function renderList(divId,items,path){
+const div=document.getElementById(divId);
+div.innerHTML="";
+if(!items) return;
+Object.keys(items).forEach(key=>{
+const item=items[key];
+const isLink=item.data.startsWith("http");
+const action=isLink?`<a href="${item.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p style="background:#eee;padding:10px;border-radius:8px;">${item.data}</p>`;
+div.innerHTML+=`<div class="card">
+<h4>${item.title}</h4>
+<small>Par ${item.email} à ${item.time||''}</small>
+<div>${action}</div>
+<div style="text-align:right">
+<button class="btn-main" onclick="markDone('${key}')">Terminé ✅</button>
+${item.user===auth.currentUser.uid?`<button class="btn-delete" onclick="deleteItem('${path}','${key}')">Effacer</button>`:''}
+</div>
+</div>`;
+});
+}
+
+// Navigation sections
+window.show=function(id){
+document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+};
+</script>
+</body>
+</html>

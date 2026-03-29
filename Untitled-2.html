@@ -238,7 +238,7 @@ button {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, push, onValue, remove, set, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, push, onValue, remove, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -323,14 +323,7 @@ window.deleteItem = function(path, id){
   }
 };
 
-// ----- Vider le chat -----
-window.clearChat = function(){
-  if(confirm("Vider tout le chat ?")){
-    remove(ref(db,'chat')).then(()=>showMessage("Chat vidé !"));
-  }
-};
-
-// ----- Exercices réalisés -----
+// ----- Exercices et tâches réalisés -----
 window.markDone = function(exId){
   const doneRef = ref(db, `done/${auth.currentUser.uid}/${exId}`);
   get(child(ref(db,'shared/ex'), exId)).then(snapshot=>{
@@ -339,15 +332,13 @@ window.markDone = function(exId){
     }
   });
 };
-
 window.removeDone = function(id){
   if(confirm("Supprimer l'exercice réalisé ?")){
-    remove(ref(db, `done/${auth.currentUser.uid}/${id}`)
-    ).then(()=>{ showMessage("Exercice supprimé !"); renderDoneEx(); })
+    remove(ref(db, `done/${auth.currentUser.uid}/${id}`))
+    .then(()=>{ showMessage("Exercice supprimé !"); renderDoneEx(); })
     .catch(err => showMessage(err.message,false));
   }
 };
-
 function renderDoneEx(){
   const div=document.getElementById("doneList");
   get(ref(db,`done/${auth.currentUser.uid}`)).then(snapshot=>{
@@ -369,19 +360,14 @@ function renderDoneEx(){
   });
 }
 
-// ----- Tâches réalisées -----
 window.markTaskDone = function(taskId){
   const doneRef = ref(db, `doneTasks/${auth.currentUser.uid}/${taskId}`);
   get(child(ref(db,'shared/tasks'), taskId)).then(snapshot=>{
     if(snapshot.exists()){
-      set(doneRef, snapshot.val()).then(()=>{ 
-        showMessage("Tâche marquée ✅"); 
-        renderDoneTasks(); 
-      });
+      set(doneRef, snapshot.val()).then(()=>{ showMessage("Tâche marquée ✅"); renderDoneTasks(); });
     }
   });
 };
-
 window.removeDoneTask = function(taskId){
   if(confirm("Supprimer la tâche réalisée ?")){
     remove(ref(db, `doneTasks/${auth.currentUser.uid}/${taskId}`))
@@ -389,7 +375,6 @@ window.removeDoneTask = function(taskId){
     .catch(err => showMessage(err.message,false));
   }
 };
-
 function renderDoneTasks(){
   const div = document.getElementById("doneTaskList");
   get(ref(db,`doneTasks/${auth.currentUser.uid}`)).then(snapshot=>{
@@ -426,53 +411,101 @@ function renderSharedContent(){
     Object.keys(pdfs).forEach(k=>{
       const p = pdfs[k];
       const action = p.data.startsWith("http")?`<a href="${p.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p>${p.data}</p>`;
-      pdfList.innerHTML += `
-        <div class="card">
-          <strong>${p.title}</strong><br>
-          ${action}
-          ${p.user===auth.currentUser?.uid?`<button class="btn-delete" onclick="deleteItem('pdfs','${k}')">Supprimer</button>`:''}
-        </div>`;
+      pdfList.innerHTML += `<div class="card"><strong>${p.title}</strong><br>${action}${p.user===auth.currentUser?.uid?`<button class="btn-delete" onclick="deleteItem('pdfs','${k}')">Supprimer</button>`:''}</div>`;
     });
 
     // Exercices
     exList.innerHTML = '';
     const exs = data.ex || {};
     Object.keys(exs).forEach(k=>{
-      const e = exs[k];
-      const action = e.data.startsWith("http")?`<a href="${e.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p>${e.data}</p>`;
-      exList.innerHTML += `
-        <div class="card">
-          <strong>${e.title}</strong><br>
-          ${action}
-          <div style="text-align:right">
-          <button class="btn-main" onclick="markDone('${k}')">Fait ✅</button>
-          ${e.user===auth.currentUser?.uid?`<button class="btn-delete" onclick="deleteItem('ex','${k}')">Supprimer</button>`:''}
-          </div>
-        </div>`;
+      const p = exs[k];
+      const action = p.data.startsWith("http")?`<a href="${p.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p>${p.data}</p>`;
+      exList.innerHTML += `<div class="card"><strong>${p.title}</strong><br>${action}${p.user===auth.currentUser?.uid?`<button class="btn-delete" onclick="deleteItem('ex','${k}')">Supprimer</button>`:''} <button class="btn-main" onclick="markDone('${k}')">Réalisé ✅</button></div>`;
     });
 
     // Tâches
     tList.innerHTML = '';
     const tasks = data.tasks || {};
     Object.keys(tasks).forEach(k=>{
-      const t = tasks[k];
-      const action = t.data.startsWith("http")?`<a href="${t.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p>${t.data}</p>`;
-      tList.innerHTML += `
-        <div class="card">
-          <strong>${t.title}</strong><br>
-          ${action}
-          <div style="text-align:right">
-          <button class="btn-main" onclick="markTaskDone('${k}')">Fait ✅</button>
-          ${t.user===auth.currentUser?.uid?`<button class="btn-delete" onclick="deleteItem('tasks','${k}')">Supprimer</button>`:''}
-          </div>
-        </div>`;
+      const p = tasks[k];
+      const action = p.data.startsWith("http")?`<a href="${p.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p>${p.data}</p>`;
+      tList.innerHTML += `<div class="card"><strong>${p.title}</strong><br>${action}${p.user===auth.currentUser?.uid?`<button class="btn-delete" onclick="deleteItem('tasks','${k}')">Supprimer</button>`:''} <button class="btn-main" onclick="markTaskDone('${k}')">Réalisé ✅</button></div>`;
     });
 
+    // Compteurs
     document.getElementById("pdfCount").innerText=Object.keys(pdfs).length;
     document.getElementById("exCount").innerText=Object.keys(exs).length;
     document.getElementById("taskCount").innerText=Object.keys(tasks).length;
   });
 }
+
+// ----- Chat ----- 
+const chatRef = ref(db,'chat');
+
+window.sendMessage = function(){
+  const input = document.getElementById("chatInput");
+  const text = input.value.trim();
+  if(!text) return;
+  const newMsgRef = push(chatRef);
+  set(newMsgRef,{
+    text:text,
+    user:auth.currentUser.email.split('@')[0],
+    uid:auth.currentUser.uid,
+    time:new Date().toLocaleTimeString()
+  }).then(()=>{ input.value=""; showMessage("Message envoyé !"); });
+};
+
+// Supprimer un message (uniquement si message personnel)
+window.deleteMessage = function(id, uid){
+  if(uid !== auth.currentUser.uid) return showMessage("Vous ne pouvez supprimer que vos messages.", false);
+  if(confirm("Supprimer ce message ?")){
+    remove(ref(db, `chat/${id}`))
+      .then(()=>showMessage("Message supprimé !"));
+  }
+};
+
+// Modifier un message (uniquement si message personnel)
+window.editMessage = function(id, uid){
+  if(uid !== auth.currentUser.uid) return showMessage("Vous ne pouvez modifier que vos messages.", false);
+  const newText = prompt("Modifier le message :");
+  if(newText!==null && newText.trim()!==""){
+    update(ref(db, `chat/${id}`), {text:newText})
+      .then(()=>showMessage("Message modifié !"));
+  }
+};
+
+// Vider tout le chat
+window.clearChat = function(){
+  if(confirm("Vider tout le chat ?")){
+    remove(chatRef).then(()=>showMessage("Chat vidé !"));
+  }
+};
+
+// Afficher le chat en direct
+onValue(chatRef, snapshot=>{
+  const chatBox = document.getElementById("chatBox");
+  const data = snapshot.val() || {};
+  chatBox.innerHTML = '';
+  Object.keys(data).forEach(id=>{
+    const m = data[id];
+    const isOwner = m.uid === auth.currentUser.uid;
+    chatBox.innerHTML += `
+      <div class="chat-message">
+        <strong>${m.user}</strong> <small>${m.time}</small><br>
+        ${m.text}
+        ${isOwner ? `<div class="chat-actions">
+          <button class="btn-delete" onclick="deleteMessage('${id}','${m.uid}')">🗑️</button>
+          <button class="btn-main" onclick="editMessage('${id}','${m.uid}')">✏️</button>
+        </div>` : ''}
+      </div>
+    `;
+  });
+});
+
+// ----- Sauvegarde automatique toutes les 30s -----
+setInterval(renderSharedContent,30000);
+setInterval(renderDoneEx,30000);
+setInterval(renderDoneTasks,30000);
 
 // ----- Auth State -----
 onAuthStateChanged(auth,user=>{
@@ -482,23 +515,8 @@ onAuthStateChanged(auth,user=>{
     renderSharedContent();
     renderDoneEx();
     renderDoneTasks();
-  }else{
-    document.body.classList.remove("logged-in");
   }
 });
-
-// ----- Auto-save (30s) -----
-setInterval(()=>{
-  if(auth.currentUser){
-    const autoSaveData = {
-      pdfs: document.getElementById("rList").innerHTML,
-      exs: document.getElementById("eList").innerHTML,
-      tasks: document.getElementById("tList").innerHTML
-    };
-    set(ref(db, `autoSave/${auth.currentUser.uid}`), autoSaveData);
-  }
-}, 30000);
-
 </script>
 </body>
 </html>

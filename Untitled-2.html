@@ -429,4 +429,42 @@ onAuthStateChanged(auth,user=>{
       Object.keys(messages).forEach(key=>{
         const m = messages[key];
         const isImage=m.type==='image';
-        const content=isImage?`<img src="${m.data}" style="max-width:100px;border-radius:8px;">`
+        const content=isImage?`<img src="${m.data}" style="max-width:100px;border-radius:8px;">`:`${m.data}`;
+        chatBox.innerHTML+=`<div class="chat-message">
+          <strong>${m.user}</strong> : ${content}<small>${m.time||''}</small>
+        </div>`;
+      });
+      chatBox.scrollTop=chatBox.scrollHeight;
+    });
+
+    // ----- Utilisateurs en ligne -----
+    const onlineRef = ref(db,'online');
+    onValue(onlineRef,snapshot=>{
+      const users=snapshot.val()||{};
+      document.getElementById("onlineUsers").innerText=Object.values(users).join(", ");
+    });
+    set(ref(db,'online/'+user.uid),user.email);
+    window.addEventListener("beforeunload",()=>remove(ref(db,'online/'+user.uid)));
+  }
+});
+
+// ----- Chat send -----
+window.sendMessage=function(){
+  const input=document.getElementById("chatInput");
+  const file=document.getElementById("chatImage").files[0];
+  if(file){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      push(ref(db,'chat'),{user:auth.currentUser.email,data:e.target.result,type:'image',time:new Date().toLocaleTimeString()});
+    }
+    reader.readAsDataURL(file);
+  } else if(input.value.trim()){
+    push(ref(db,'chat'),{user:auth.currentUser.email,data:input.value.trim(),type:'text',time:new Date().toLocaleTimeString()});
+  }
+  input.value="";
+  document.getElementById("chatImage").value="";
+};
+</script>
+
+</body>
+</html>

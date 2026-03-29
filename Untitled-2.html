@@ -149,16 +149,33 @@ if(user){
 document.body.classList.add("logged-in");
 document.getElementById("nameDisplay").innerText=user.email;
 
+// Pour notifications en temps réel
+const previousData = { pdfs:{}, ex:{}, tasks:{} };
+function checkNewItems(path, items){
+    Object.keys(items || {}).forEach(key=>{
+        if(!previousData[path][key] && items[key].user !== auth.currentUser.uid){
+            showMessage(`Nouvel ${path==='pdfs'?'résumé':path==='ex'?'exercice':'tâche'} partagé par ${items[key].email} !`);
+        }
+    });
+    previousData[path] = items || {};
+}
+
 // Écoute globale
 onValue(ref(db,'shared'),snapshot=>{
-const data=snapshot.val()||{pdfs:{},ex:{},tasks:{}};
-renderList('rList',data.pdfs,'pdfs');
-renderList('eList',data.ex,'ex');
-renderList('tList',data.tasks,'tasks');
-// Compteurs
-document.getElementById("pdfCount").innerText=Object.keys(data.pdfs||{}).filter(k=>data.pdfs[k].user===user.uid).length;
-document.getElementById("exCount").innerText=Object.keys(data.ex||{}).filter(k=>data.ex[k].user===user.uid).length;
-document.getElementById("taskCount").innerText=Object.keys(data.tasks||{}).filter(k=>data.tasks[k].user===user.uid).length;
+    const data=snapshot.val()||{pdfs:{},ex:{},tasks:{}};
+    renderList('rList',data.pdfs,'pdfs');
+    renderList('eList',data.ex,'ex');
+    renderList('tList',data.tasks,'tasks');
+
+    // Compteurs utilisateur
+    document.getElementById("pdfCount").innerText=Object.keys(data.pdfs||{}).filter(k=>data.pdfs[k].user===user.uid).length;
+    document.getElementById("exCount").innerText=Object.keys(data.ex||{}).filter(k=>data.ex[k].user===user.uid).length;
+    document.getElementById("taskCount").innerText=Object.keys(data.tasks||{}).filter(k=>data.tasks[k].user===user.uid).length;
+
+    // 🔔 Notifications
+    checkNewItems('pdfs', data.pdfs);
+    checkNewItems('ex', data.ex);
+    checkNewItems('tasks', data.tasks);
 });
 
 renderDoneEx();
@@ -226,8 +243,6 @@ Object.keys(items).forEach(key=>{
 const item=items[key];
 const isLink=item.data.startsWith("http");
 const action=isLink?`<a href="${item.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p style="background:#eee;padding:10px;border-radius:8px;">${item.data}</p>`;
-
-// ✅ Nouveau : bouton Terminé visible pour tous
 div.innerHTML+=`<div class="card">
 <h4>${item.title}</h4>
 <small>Par ${item.email} à ${item.time||''}</small>

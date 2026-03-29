@@ -181,7 +181,7 @@ button {
     <button onclick="confirmLogout()" style="color:var(--danger)">🚪</button>
   </div>
 
-  <!-- Sections existantes -->
+  <!-- Sections -->
   <div id="resumeSec" class="section active">
     <h3>📚🌸 Partager un résumé</h3>
     <div class="card" style="background:rgba(255,255,255,0.1);border:1px dashed white;">
@@ -232,7 +232,7 @@ button {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, push, onValue, remove, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, push, onValue, remove, set, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -308,22 +308,44 @@ window.publish=function(path,tId,cId){
   }).catch(err=>showMessage(err.message,false));
 };
 
-// ----- Supprimer -----
-window.deleteItem=function(path,id){
+// ----- Supprimer un élément partagé -----
+window.deleteItem = function(path, id){
   if(confirm("Supprimer ?")){
-    remove(ref(db,`shared/${path}/${id}`)).catch(err=>showMessage(err.message,false));
+    remove(ref(db, `shared/${path}/${id}`))
+      .then(() => {
+        showMessage("Supprimé !");
+        get(ref(db, `shared/${path}`)).then(snapshot => {
+          renderList(path==='ex'?'eList':path==='pdfs'?'rList':'tList', snapshot.val(), path);
+        });
+      })
+      .catch(err => showMessage(err.message,false));
   }
 };
 
 // ----- Exercices réalisés -----
-window.markDone=function(exId){
-  const doneRef=ref(db,`done/${auth.currentUser.uid}/${exId}`);
-  get(child(ref(db,'shared/ex'),exId)).then(snapshot=>{
+window.markDone = function(exId){
+  const doneRef = ref(db, `done/${auth.currentUser.uid}/${exId}`);
+  get(child(ref(db,'shared/ex'), exId)).then(snapshot=>{
     if(snapshot.exists()){
-      set(doneRef,snapshot.val()).then(()=>renderDoneEx());
+      set(doneRef, snapshot.val()).then(()=>{
+        showMessage("Exercice marqué comme réalisé ✅");
+        renderDoneEx();
+      });
     }
   });
 };
+
+window.removeDone = function(id){
+  if(confirm("Supprimer l'exercice réalisé ?")){
+    remove(ref(db, `done/${auth.currentUser.uid}/${id}`))
+      .then(() => {
+        showMessage("Exercice réalisé supprimé !");
+        renderDoneEx();
+      })
+      .catch(err => showMessage(err.message,false));
+  }
+};
+
 function renderDoneEx(){
   const div=document.getElementById("doneList");
   get(ref(db,`done/${auth.currentUser.uid}`)).then(snapshot=>{
@@ -344,9 +366,6 @@ function renderDoneEx(){
     });
   });
 }
-window.removeDone=function(id){
-  remove(ref(db,`done/${auth.currentUser.uid}/${id}`));
-};
 
 // ----- Liste partagée -----
 function renderList(divId,items,path){
@@ -410,62 +429,4 @@ onAuthStateChanged(auth,user=>{
       Object.keys(messages).forEach(key=>{
         const m = messages[key];
         const isImage=m.type==='image';
-        const content=isImage?`<img src="${m.data}" style="max-width:100px;border-radius:8px;">`:`<span>${m.data}</span>`;
-        chatBox.innerHTML+=`<div class="chat-message">
-          ${content}
-          <small>${m.userEmail} à ${m.time||''}</small>
-          ${m.userId===user.uid?`<div class="chat-actions"><button class="btn-delete" onclick="deleteChat('${key}')">❌</button></div>`:''}
-        </div>`;
-      });
-      chatBox.scrollTop = chatBox.scrollHeight;
-    });
-
-    const onlineRef = ref(db,'online');
-    set(ref(db,'online/'+user.uid), user.email);
-    window.addEventListener("beforeunload",()=>remove(ref(db,'online/'+user.uid)));
-
-    onValue(onlineRef,snapshot=>{
-      const users=snapshot.val()||{};
-      document.getElementById("onlineUsers").innerText=Object.values(users).join(", ");
-    });
-  }
-});
-
-// ----- Chat send/delete -----
-window.sendMessage=function(){
-  const val=document.getElementById("chatInput").value.trim();
-  const file=document.getElementById("chatImage").files[0];
-  if(!val && !file) return showMessage("Message vide !",false);
-  const chatRef = ref(db,'chat');
-  const newMsgRef = push(chatRef);
-  if(file){
-    const reader = new FileReader();
-    reader.onload = function(e){
-      set(newMsgRef,{
-        type:'image',
-        data:e.target.result,
-        userId:auth.currentUser.uid,
-        userEmail:auth.currentUser.email,
-        time:new Date().toLocaleTimeString()
-      });
-      document.getElementById("chatImage").value="";
-    };
-    reader.readAsDataURL(file);
-  } else {
-    set(newMsgRef,{
-      type:'text',
-      data:val,
-      userId:auth.currentUser.uid,
-      userEmail:auth.currentUser.email,
-      time:new Date().toLocaleTimeString()
-    });
-    document.getElementById("chatInput").value="";
-  }
-};
-window.deleteChat=function(key){
-  remove(ref(db,'chat/'+key));
-};
-</script>
-
-</body>
-</html>
+        const content=isImage?`<img src="${m.data}" style="max-width:100px;border-radius:8px;">`

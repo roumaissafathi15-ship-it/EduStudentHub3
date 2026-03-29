@@ -158,8 +158,8 @@ button {
   <h2>🔐 EduStudentHub 🌸</h2>
   <input id="email" type="email" placeholder="Email">
   <input id="password" type="password" placeholder="Mot de passe">
-  <button class="btn-main" onclick="login()">Se connecter</button>
   <button class="btn-main" onclick="register()">S’inscrire</button>
+  <button class="btn-main" onclick="login()">Se connecter</button>
 </div>
 
 <div id="dashboard" class="container">
@@ -261,7 +261,11 @@ window.register = function(){
   const password=document.getElementById("password").value.trim();
   if(!email||!password) return showMessage("Champs vides !",false);
   createUserWithEmailAndPassword(auth,email,password)
-    .then(u=>showMessage("Compte créé !"))
+    .then(u=>{
+      const name = prompt("Ton pseudo :") || email;
+      set(ref(db, `users/${u.user.uid}`), {email,name});
+      showMessage("Compte créé !");
+    })
     .catch(e=>showMessage(e.message,false));
 };
 
@@ -282,8 +286,7 @@ window.confirmLogout = function(){
 
 // ----- Sections -----
 window.show = function(id){
-  const sections = document.querySelectorAll(".section");
-  sections.forEach(s=>s.classList.remove("active"));
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
   const target = document.getElementById(id);
   if(target) target.classList.add("active");
 };
@@ -312,159 +315,106 @@ window.publish=function(path,tId,cId){
 window.deleteItem = function(path, id){
   if(confirm("Supprimer ?")){
     remove(ref(db, `shared/${path}/${id}`))
-      .then(() => {
-        showMessage("Supprimé !");
-        get(ref(db, `shared/${path}`)).then(snapshot => {
-          renderList(path==='ex'?'eList':path==='pdfs'?'rList':'tList', snapshot.val(), path);
-        });
-      })
+      .then(() => showMessage("Supprimé !"))
       .catch(err => showMessage(err.message,false));
   }
 };
 
-// ----- Exercices réalisés -----
-window.markDone = function(exId){
-  const doneRef = ref(db, `done/${auth.currentUser.uid}/${exId}`);
-  get(child(ref(db,'shared/ex'), exId)).then(snapshot=>{
-    if(snapshot.exists()){
-      set(doneRef, snapshot.val()).then(()=>{
-        showMessage("Exercice marqué comme réalisé ✅");
-        renderDoneEx();
+// ----- Chat -----
+// Afficher messages + qui a vu
+function renderChat(){
+  const chatRef = ref(db,'chat');
+  onValue(chatRef, snapshot => {
+    const messages = snapshot.val() || {};
+    const chatBox = document.getElementById("chatBox");
+    chatBox.innerHTML = "";
+
+    Object.keys(messages).forEach(key => {
+      const m = messages[key];
+
+      // Marquer comme vu
+      if(!m.seenBy || !m.seenBy[auth.currentUser.uid]){
+        set(ref(db, `chat/${key}/seenBy/${auth.currentUser.uid}`), auth.currentUser.email);
+      }
+
+      const isImage = m.type === 'image';
+      const content = isImage ? `<img src="${m.data}" style="max-width:100px;border-radius:8px;">` : m.data;
+
+      const seenList = m.seenBy ? Object.values(m.seenBy).join(", ") : "Personne";
+
+      chatBox.innerHTML += `
+        <div class="chat-message">
+          <strong>${m.user}</strong> : ${content}
+          <small>${m.time || ''}</small>
+          <small style="font-size:0.7em;color:#333;">Vu par : ${seenList}</small>
+        </div>
+      `;
+    });
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+}
+
+// ----- Utilisateurs en ligne -----
+function renderOnlineUsers(){
+  const onlineRef = ref(db,'online');
+  onValue(onlineRef,snapshot=>{
+    const users = snapshot.val() || {};
+    document.getElementById("onlineUsers").innerText = Object.values(users).join(", ");
+  });
+}
+
+// Envoyer message
+window.sendMessage = function(){
+  const input = document.getElementById("chatInput");
+  const file = document.getElementById("chatImage").files[0];
+
+  get(ref(db, `users/${auth.currentUser.uid}/name`)).then(snapshot=>{
+    const name = snapshot.val() || auth.currentUser.email;
+
+    if(file){
+      const reader = new FileReader();
+      reader.onload = function(e){
+        push(ref(db,'chat'),{
+          user: name,
+          data: e.target.result,
+          type:'image',
+          time: new Date().toLocaleTimeString()
+        });
+      }
+      reader.readAsDataURL(file);
+    } else if(input.value.trim()){
+      push(ref(db,'chat'),{
+        user: name,
+        data: input.value.trim(),
+        type:'text',
+        time: new Date().toLocaleTimeString()
       });
     }
+
+    input.value = "";
+    document.getElementById("chatImage").value = "";
   });
 };
-
-window.removeDone = function(id){
-  if(confirm("Supprimer l'exercice réalisé ?")){
-    remove(ref(db, `done/${auth.currentUser.uid}/${id}`))
-      .then(() => {
-        showMessage("Exercice réalisé supprimé !");
-        renderDoneEx();
-      })
-      .catch(err => showMessage(err.message,false));
-  }
-};
-
-function renderDoneEx(){
-  const div=document.getElementById("doneList");
-  get(ref(db,`done/${auth.currentUser.uid}`)).then(snapshot=>{
-    const data=snapshot.val()||{};
-    div.innerHTML="";
-    Object.keys(data).forEach(key=>{
-      const item=data[key];
-      const isLink=item.data.startsWith("http");
-      const action=isLink?`<a href="${item.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p style="background:#eee;padding:10px;border-radius:8px;color:#333;">${item.data}</p>`;
-      div.innerHTML+=`<div class="card">
-        <h4>${item.title}</h4>
-        <small>${item.time||''}</small>
-        <div>${action}</div>
-        <div style="text-align:right">
-          <button class="btn-delete" onclick="removeDone('${key}')">Supprimer</button>
-        </div>
-      </div>`;
-    });
-  });
-}
-
-// ----- Liste partagée -----
-function renderList(divId,items,path){
-  const div=document.getElementById(divId);
-  div.innerHTML="";
-  if(!items) return;
-  Object.keys(items).forEach(key=>{
-    const item=items[key];
-    const isLink=item.data.startsWith("http");
-    const action=isLink?`<a href="${item.data}" target="_blank" class="btn-open">Ouvrir ↗</a>`:`<p style="background:#eee;padding:10px;border-radius:8px;color:#333;">${item.data}</p>`;
-    div.innerHTML+=`<div class="card">
-      <h4>${item.title}</h4>
-      <small>Par ${item.email} à ${item.time||''}</small>
-      <div>${action}</div>
-      <div style="text-align:right">
-        <button class="btn-main" onclick="markDone('${key}')">Terminé ✅</button>
-        ${item.user===auth.currentUser.uid?`<button class="btn-delete" onclick="deleteItem('${path}','${key}')">Effacer</button>`:''}
-      </div>
-    </div>`;
-  });
-}
 
 // ----- Auth state -----
 onAuthStateChanged(auth,user=>{
   if(user){
     document.body.classList.add("logged-in");
-    document.getElementById("nameDisplay").innerText=user.email;
 
-    const previousData = { pdfs:{}, ex:{}, tasks:{} };
-
-    function checkNewItems(path, items){
-      Object.keys(items||{}).forEach(key=>{
-        if(!previousData[path][key] && items[key].user !== auth.currentUser.uid){
-          showMessage(`Nouvel ${path==='pdfs'?'résumé':path==='ex'?'exercice':'tâche'} partagé par ${items[key].email} !`);
-        }
-      });
-      previousData[path]=items||{};
-    }
-
-    onValue(ref(db,'shared'),snapshot=>{
-      const data=snapshot.val()||{pdfs:{},ex:{},tasks:{}};
-      renderList('rList',data.pdfs,'pdfs');
-      renderList('eList',data.ex,'ex');
-      renderList('tList',data.tasks,'tasks');
-      document.getElementById("pdfCount").innerText=Object.keys(data.pdfs||{}).filter(k=>data.pdfs[k].user===user.uid).length;
-      document.getElementById("exCount").innerText=Object.keys(data.ex||{}).filter(k=>data.ex[k].user===user.uid).length;
-      document.getElementById("taskCount").innerText=Object.keys(data.tasks||{}).filter(k=>data.tasks[k].user===user.uid).length;
-      checkNewItems('pdfs',data.pdfs);
-      checkNewItems('ex',data.ex);
-      checkNewItems('tasks',data.tasks);
+    // Afficher pseudo
+    get(ref(db, `users/${user.uid}/name`)).then(s=>{
+      document.getElementById("nameDisplay").innerText = s.val() || user.email;
     });
 
-    renderDoneEx();
-
-    // ----- Chat -----
-    const chatRef = ref(db,'chat');
-    onValue(chatRef,snapshot=>{
-      const messages=snapshot.val()||{};
-      const chatBox=document.getElementById("chatBox");
-      chatBox.innerHTML="";
-      Object.keys(messages).forEach(key=>{
-        const m = messages[key];
-        const isImage=m.type==='image';
-        const content=isImage?`<img src="${m.data}" style="max-width:100px;border-radius:8px;">`:`${m.data}`;
-        chatBox.innerHTML+=`<div class="chat-message">
-          <strong>${m.user}</strong> : ${content}<small>${m.time||''}</small>
-        </div>`;
-      });
-      chatBox.scrollTop=chatBox.scrollHeight;
-    });
-
-    // ----- Utilisateurs en ligne -----
-    const onlineRef = ref(db,'online');
-    onValue(onlineRef,snapshot=>{
-      const users=snapshot.val()||{};
-      document.getElementById("onlineUsers").innerText=Object.values(users).join(", ");
-    });
+    // Liste online
     set(ref(db,'online/'+user.uid),user.email);
+    renderOnlineUsers();
     window.addEventListener("beforeunload",()=>remove(ref(db,'online/'+user.uid)));
+
+    // Affichage chat
+    renderChat();
   }
 });
-
-// ----- Chat send -----
-window.sendMessage=function(){
-  const input=document.getElementById("chatInput");
-  const file=document.getElementById("chatImage").files[0];
-  if(file){
-    const reader = new FileReader();
-    reader.onload = function(e){
-      push(ref(db,'chat'),{user:auth.currentUser.email,data:e.target.result,type:'image',time:new Date().toLocaleTimeString()});
-    }
-    reader.readAsDataURL(file);
-  } else if(input.value.trim()){
-    push(ref(db,'chat'),{user:auth.currentUser.email,data:input.value.trim(),type:'text',time:new Date().toLocaleTimeString()});
-  }
-  input.value="";
-  document.getElementById("chatImage").value="";
-};
 </script>
-
 </body>
 </html>
